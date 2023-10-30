@@ -1,4 +1,6 @@
 /.env
 venv/
+venv_2/
 *.log
 /test_file.py
+*__pycache__*

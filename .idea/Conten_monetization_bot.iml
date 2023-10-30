@@ -3,8 +3,12 @@
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$">
       <excludeFolder url="file://$MODULE_DIR$/venv" />
+      <excludeFolder url="file://$MODULE_DIR$/venv_2" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.11 (Conten_monetization_bot)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.11 (Conten_monetization_bot) (2)" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="PackageRequirementsSettings">
+    <option name="removeUnused" value="true" />
   </component>
 </module>

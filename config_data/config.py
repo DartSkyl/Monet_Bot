@@ -11,4 +11,6 @@ DB_INFO = (
     os.getenv("db_user"),
     os.getenv("db_pass"),
     os.getenv("db_name"),
-    os.getenv("db_port"))
+    os.getenv("db_host"))
+
+MAIN_GROUP_ID = os.getenv("main_group_id")
