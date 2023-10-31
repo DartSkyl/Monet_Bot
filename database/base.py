@@ -12,22 +12,29 @@ class BotBase:
         self.connection = None
 
     async def connect(self):
-        """Метод создания конекта с базой"""
+        """Метод создания соединения с базой"""
         self.connection = await apg.connect(database=self.db_name, user=self.db_user, password=self.db_pass,
                                             host=self.db_host)
 
     async def check_db_structure(self):
-        try:  # Таблица со всеми группами
+        try:
+
+            # Таблица со всеми группами
             await self.connection.execute("CREATE TABLE IF NOT EXISTS groups"
-                                          "(group_id BIGINT PRIMARY KEY,"
-                                          "group_name VARCHAR(130),"
+                                          "(channel_id BIGINT PRIMARY KEY,"
+                                          "channel_name VARCHAR(130),"
                                           "date_added FLOAT,"
-                                          "is_close BOOLEAN);")
+                                          "is_paid BOOLEAN);")
 
             # Таблица с юзерами, которым была выдана пробная подписка
             await self.connection.execute("CREATE TABLE IF NOT EXISTS trail_subscription"
                                           "(user_id BIGINT PRIMARY KEY,"
                                           "data_activate FLOAT)")
+
         except PostgresSyntaxError as exc:
-            print('Ups!\n', exc)
-            exit()
+            print()
+            exit('Ups!\n' + str(exc))
+
+
+    async def add_free_channel(self, channel_id: int):
+        await self.

@@ -1,9 +1,63 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import KeyboardButton
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
+# ========== Главная клавиатура администратора ==========
 
-play = KeyboardButton(text='🎱 Бросить вызов фортуне!')
-button_1 = KeyboardButton(text='✅ Активировать пробную подписку')
-button_2 = KeyboardButton(text='ℹ️ Посмотреть подписку')
-kb_buttons = [[play], [button_1], [button_2]]
-playing_kb = ReplyKeyboardMarkup(resize_keyboard=True, keyboard=kb_buttons)
-# playing_kb.add(play, button_1, button_2)
+main_admin_keyboard = ReplyKeyboardBuilder()
+
+main_buttons = [
+        KeyboardButton(text='📝 Управление каналами'),
+        KeyboardButton(text='⌛ Управление подписками'),
+        KeyboardButton(text='📜 Авто постинг '),
+        KeyboardButton(text='📈 Статистика')
+]
+
+main_admin_keyboard.add(*main_buttons)
+main_admin_keyboard.adjust(1)
+main_admin_keyboard = main_admin_keyboard.as_markup(resize_keyboard=True)
+
+# ========== Клавиатура управления группами ==========
+
+group_management = ReplyKeyboardBuilder()
+
+gm_buttons = [
+    KeyboardButton(text='📃 Список каналов'),
+    KeyboardButton(text='➕ Добавить открытый канал'),
+    KeyboardButton(text='➕➕ Добавить закрытый канал'),
+    KeyboardButton(text='➖ Удалить канал'),
+    KeyboardButton(text='Назад')
+]
+
+group_management.add(*gm_buttons)
+group_management.adjust(2)
+group_management = group_management.as_markup(resize_keyboard=True)
+
+# ========== Клавиатура управления подписками ==========
+
+subscription_management = ReplyKeyboardBuilder()
+
+sm_buttons = [
+    KeyboardButton(text='⏲️ Изменить период пробной подписки'),
+    KeyboardButton(text='❌⭕Включить/Отключить пробную подписку'),
+    KeyboardButton(text='➕ Добавить подписку пользователю'),
+    KeyboardButton(text='Назад'),
+]
+
+subscription_management.add(*sm_buttons)
+subscription_management.adjust(1)
+subscription_management = subscription_management.as_markup(resize_keyboard=True)
+
+# ========== Клавиатура меню авто постинга ==========
+
+auto_posting = ReplyKeyboardBuilder()
+
+ap_buttons = [
+    KeyboardButton(text='📅 Посмотреть очередь публикаций'),
+    KeyboardButton(text='➕ Добавить публикацию в очередь'),
+    KeyboardButton(text='➖ Удалить публикацию из очереди'),
+    KeyboardButton(text='Назад'),
+]
+
+auto_posting.add(*ap_buttons)
+auto_posting.adjust(1)
+auto_posting = auto_posting.as_markup(resize_keyboard=True)

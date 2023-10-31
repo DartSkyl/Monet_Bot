@@ -1,4 +1,5 @@
 from utils import users_router
+from kyeboards import main_user_keyboard
 from aiogram.types import Message
 # from aiogram import F
 from aiogram.filters import Command
@@ -6,5 +7,5 @@ from aiogram.filters import Command
 
 @users_router.message(Command('start'))
 async def user_start(msg: Message) -> None:
-    await msg.answer("Вы не можете бросить вызов фортуне!\n"
-                     "А я могу😜")
+    await msg.answer("Добро пожаловать 😉\nВыберете действие:",
+                     reply_markup=main_user_keyboard)
