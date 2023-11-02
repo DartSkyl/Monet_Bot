@@ -61,3 +61,10 @@ ap_buttons = [
 auto_posting.add(*ap_buttons)
 auto_posting.adjust(1)
 auto_posting = auto_posting.as_markup(resize_keyboard=True)
+
+# ========== Кнопка отмены ==========
+
+cancel_button = ReplyKeyboardBuilder()
+c_button = [KeyboardButton(text='🚫 Отмена')]
+cancel_button.add(*c_button)
+cancel_button = cancel_button.as_markup(resize_keyboard=True)
