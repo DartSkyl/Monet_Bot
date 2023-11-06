@@ -38,7 +38,6 @@ subscription_management = ReplyKeyboardBuilder()
 
 sm_buttons = [
     KeyboardButton(text='⏲️ Изменить период пробной подписки'),
-    KeyboardButton(text='❌⭕Включить/Отключить пробную подписку'),
     KeyboardButton(text='➕ Добавить подписку пользователю'),
     KeyboardButton(text='Назад'),
 ]
