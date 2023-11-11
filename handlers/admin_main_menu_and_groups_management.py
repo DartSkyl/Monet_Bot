@@ -1,12 +1,12 @@
 from loader import bot, db, channels_dict
-from utils import admin_router
+from utils import admin_router, cycle_controlling_subscriptions_start
 from states import GroupManagementStates as GMS
 
 # Импорт всех клавиатур администратора
 from kyeboards import (
     main_admin_keyboard,
     group_management,
-    subscription_management,
+    sub_manag,
     auto_posting,
     cancel_button
 )
@@ -23,7 +23,7 @@ from asyncpg.exceptions import UniqueViolationError
 
 keyboards_dict = {
     '📝 Управление каналами': group_management,
-    '⌛ Управление подписками': subscription_management,
+    '⌛ Управление подписками': sub_manag,
     '📜 Авто постинг ': auto_posting,
     'Назад': main_admin_keyboard
 }
@@ -34,6 +34,7 @@ async def start(msg: Message) -> None:
     await msg.answer(f'Добро пожаловать, {msg.from_user.first_name}!'
                      f'\nВыберете действие:',
                      reply_markup=main_admin_keyboard)
+    await cycle_controlling_subscriptions_start()
 
 
 @admin_router.message(F.text.in_(keyboards_dict))

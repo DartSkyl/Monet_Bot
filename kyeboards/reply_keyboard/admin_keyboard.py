@@ -34,17 +34,19 @@ group_management = group_management.as_markup(resize_keyboard=True)
 
 # ========== Клавиатура управления подписками ==========
 
-subscription_management = ReplyKeyboardBuilder()
+sub_manag = ReplyKeyboardBuilder()
 
 sm_buttons = [
     KeyboardButton(text='⏲️ Изменить период пробной подписки'),
+    KeyboardButton(text='💵 Добавить платную подписку'),
+    KeyboardButton(text='⚙️ Посмотреть/удалить установленные подписки'),
     KeyboardButton(text='➕ Добавить подписку пользователю'),
     KeyboardButton(text='Назад'),
 ]
 
-subscription_management.add(*sm_buttons)
-subscription_management.adjust(1)
-subscription_management = subscription_management.as_markup(resize_keyboard=True)
+sub_manag.add(*sm_buttons)
+sub_manag.adjust(1)
+sub_manag = sub_manag.as_markup(resize_keyboard=True)
 
 # ========== Клавиатура меню авто постинга ==========
 

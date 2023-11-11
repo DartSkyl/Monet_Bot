@@ -1,5 +1,7 @@
 import time
+from typing import List
 import asyncpg as apg
+from asyncpg import Record
 from asyncpg.exceptions import PostgresSyntaxError
 
 
@@ -32,18 +34,24 @@ class BotBase:
             await self.connection.execute("CREATE TABLE IF NOT EXISTS trail_subscription"
                                           "(user_id BIGINT,"
                                           "channel_id BIGINT,"
-                                          "data_activate INT)")
+                                          "data_activate INT);")
+
+            # Таблица с настройками подписок. Что бы при перезапуске бота не настраивать заново
+            await self.connection.execute("CREATE TABLE IF NOT EXISTS sub_settings"
+                                          "(period VARCHAR(10) PRIMARY KEY,"
+                                          "cost INT);")
 
         except PostgresSyntaxError as exc:
             print()
             exit('Ups!\n' + str(exc))
 
+    # ========== Методы управления каналами ==========
+
     async def add_channel_table(self, channel_id: int) -> None:
+        """Метод добавляет таблицу для конкретного канала"""
         await self.connection.execute(f"CREATE TABLE IF NOT EXISTS channel_{abs(channel_id)}"
                                       "(user_id BIGINT PRIMARY KEY,"
-                                      "end_of_subscription INT)")
-
-    # ========== Методы управления каналами ==========
+                                      "end_of_subscription INT);")
 
     async def add_channel(self, channel_id: int, channel_name: str, paid: bool) -> None:
         """Добавление канала в общую таблицу с каналами"""
@@ -51,9 +59,9 @@ class BotBase:
                                       "(channel_id, channel_name, date_added, is_paid)"
                                       f"VALUES ({channel_id}, '{channel_name}', {int(time.time())}, {paid});")
 
-    async def get_channel_list(self) -> list:
+    async def get_channel_list(self) -> List[Record]:
         """Получение списка имеющихся каналов из общей таблицы с каналами"""
-        result = await self.connection.fetch("SELECT * FROM public.groups")
+        result = await self.connection.fetch("SELECT * FROM public.groups;")
         return result
 
     async def delete_channel(self, channel_id: int):
@@ -82,6 +90,38 @@ class BotBase:
 
     async def add_user_in_paid_channel(self, user_id: int, channel_id: int, subscription: int) -> None:
         """Метод добавляет пользователя в таблицу закрытого канала"""
-        await self.connection.execute(f"INSERT INTO public.ch_{abs(channel_id)}"
+        await self.connection.execute(f"INSERT INTO public.channel_{abs(channel_id)}"
                                       "(user_id, end_of_subscription)"
-                                      f"VALUES ({user_id}, {subscription})")
+                                      f"VALUES ({user_id}, {time.time() + subscription});")
+
+    async def list_of_user_subscriptions(self, channel_id) -> List[Record]:
+        """Метод выдает список подписок пользователей для дальнейшей проверки"""
+        result = await self.connection.fetch(f"SELECT * FROM public.channel_{abs(channel_id)};")
+        return result
+
+    async def set_sub_setting(self, period: str, cost: int) -> None:
+        """Метод записывает в базу настройки для вариантов подписки"""
+        await self.connection.execute(f"INSERT INTO public.sub_settings (period, cost)"
+                                      f"VALUES ('{period}', {cost})"
+                                      f"ON CONFLICT (period) DO UPDATE SET cost = {cost};")
+
+    async def get_sub_setting(self) -> List[Record]:
+        """Метод получения из БД вариантов подписки"""
+        result = await self.connection.fetch("SELECT * FROM public.sub_settings;")
+        return result
+
+    async def delete_subscription(self, period: str) -> None:
+        """Метод удаляет вариант подписки из базы"""
+        await self.connection.execute(f"DELETE FROM public.sub_settings WHERE period = '{period}';")
+
+    async def get_user_from_channel(self, user_id, channel_id) -> List[Record]:
+        """Метод получения пользователя из таблицы конкретного канала"""
+        result = await self.connection.fetch(f"SELECT * FROM public.channel_{abs(channel_id)} "
+                                             f"WHERE user_id = {user_id};")
+        return result
+
+    async def subscription_update(self, user_id: int, channel_id: int, new_sub: int) -> None:
+        """Метод обновляет подписку пользователя в конкретном канале"""
+        await self.connection.execute(f"UPDATE public.channel_{abs(channel_id)} "
+                                      f"SET end_of_subscription = {new_sub} "
+                                      f"WHERE user_id = {user_id};")

@@ -1,5 +1,8 @@
+from typing import List, Dict
+
 from database.base import BotBase
 from config_data.config import BOT_TOKEN, DB_INFO, MAIN_GROUP_ID
+
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
@@ -10,9 +13,10 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(bot=bot, storage=MemoryStorage())
 
 # В этом списке будем хранить ID всех администраторов
-admins_id = list()
+admins_id: List[int] = list()
 
-# В этом словаре будут храниться группы. Данный словарь будет использоваться для апдэйтов chat_member,
+# В этом словаре будут храниться группы. Данный словарь будет использоваться
+# для апдэйтов chat_member и не только,
 # как оперативная память, что бы каждый раз не обращаться к БД.
 # Словарь содержит два ключа: один для открытых каналов, один для платных.
 # Значением каждого ключа является список с ID соответствующих каналов
@@ -21,8 +25,15 @@ channels_dict = {
     "is_paid": []
 }
 
+# В этом словаре хранятся варианты для платной подписки.
+# Ключ это срок подписки в сутках, а значение это стоимость.
+# Например:{'30': 100} - это подписка на 30 суток стоимостью 100 рублей
+# За исключением ключа "0". Под этим ключом хранится период пробной подписки в секундах
+subscription_dict = dict()
+
 
 async def db_connect():
+    """В этой функции идет подключение к БД и проверка ее структуры"""
     await db.connect()
     await db.check_db_structure()
 
@@ -44,3 +55,13 @@ async def channels_load():
             channels_dict['is_paid'].append(chn['channel_id'])
         else:
             channels_dict['free'].append(chn['channel_id'])
+
+
+async def sub_settings_load():
+    """Функция загружает из БД настройки для подписок в оперативную память"""
+
+    # Прописать ситуация для первого запуска, когда нет даже ключа 0 для пробной подписки!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    st_list = await db.get_sub_setting()
+    for elem in st_list:
+        subscription_dict[elem['period']] = elem['cost']
