@@ -1,4 +1,7 @@
-from .Inline_keyboard.inline_for_admins import del_board, SubDel, add_sub_keyboard, AddSubForUser
+from .Inline_keyboard.inline_for_admins import (
+    del_board, SubDel,
+    add_sub_keyboard, AddSubForUser,
+    add_sub_channel_keyboard, SubAddForChannel)
 from .reply_keyboard.admin_keyboard import (
     main_admin_keyboard,
     group_management,
@@ -21,6 +24,8 @@ __all__ = (
     "SubDel",
     "add_sub_keyboard",
     "AddSubForUser",
+    "add_sub_channel_keyboard",
+    "SubAddForChannel",
 
     # пользовательские клавиатуры
 

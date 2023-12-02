@@ -12,7 +12,7 @@ from kyeboards import (
 )
 
 from aiogram.types import Message
-from aiogram import F
+from aiogram import F, html
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
@@ -24,14 +24,14 @@ from asyncpg.exceptions import UniqueViolationError
 keyboards_dict = {
     '📝 Управление каналами': group_management,
     '⌛ Управление подписками': sub_manag,
-    '📜 Авто постинг ': auto_posting,
+    '📜 Авто постинг': auto_posting,
     'Назад': main_admin_keyboard
 }
 
 
 @admin_router.message(Command('start'))
 async def start(msg: Message) -> None:
-    await msg.answer(f'Добро пожаловать, {msg.from_user.first_name}!'
+    await msg.answer(f'Добро пожаловать, <b>{msg.from_user.first_name}</b>!'
                      f'\nВыберете действие:',
                      reply_markup=main_admin_keyboard)
     await cycle_controlling_subscriptions_start()
@@ -52,9 +52,9 @@ async def get_channels_list(msg: Message) -> None:
     pd_chn = ""
     for elem in ch_list:
         if elem['is_paid']:
-            pd_chn += f"Название - {elem['channel_name']}   ID: {elem['channel_id']}\n"
+            pd_chn += f"Название - <i>{html.quote(elem['channel_name'])}</i>   ID: <b>{elem['channel_id']}</b>\n"
         else:
-            fr_chn += f"Название - {elem['channel_name']}   ID: {elem['channel_id']}\n"
+            fr_chn += f"Название - <i>{html.quote(elem['channel_name'])}</i>   ID: <b>{elem['channel_id']}</b>\n"
     msg_ch_list = ("Список каналов:\n"
                    "\nОткрытые:\n"
                    f"{fr_chn}"
@@ -76,7 +76,7 @@ async def free_channel_add(msg: Message, state: FSMContext):
         await state.set_data({'paid': True})
 
     await msg.answer("Введите ID канала\n"
-                     "ID канала должно быть целый отрицательным числом!\n"
+                     "ID канала должно быть <b>целый отрицательным числом!</b>\n"
                      "Пример: -1001972569167\n"
                      "Если вы не знаете ID канала, то перешлите любой пост из этого канала боту "
                      "@LeadConverterToolkitBot\n"
@@ -102,7 +102,7 @@ async def adding_free_ch(msg: Message, state: FSMContext):
             channels_dict['free'].append(added_ch.id)
 
         reply_msg_text = ("Канал добавлен!\n"
-                          f"Название канала - {added_ch.title}\n")
+                          f"Название канала - {html.bold(html.quote(added_ch.title))}\n")
         await msg.answer(text=reply_msg_text, reply_markup=main_admin_keyboard)
         await state.clear()
 
@@ -124,9 +124,9 @@ async def adding_free_ch(msg: Message, state: FSMContext):
 async def channel_delete(msg: Message, state: FSMContext) -> None:
     """Хэндлер запускает процесс удаление канала"""
     del_msg = ("Введите ID канала\n"
-               "ID канала должно быть целый отрицательным числом!\n"
+               "ID канала должно быть <b>целым отрицательным числом</b>!\n"
                "Пример: -1001972569167\n"
-               "ID каналов доступных для удаления можно посмотреть в 'Списке каналов'")
+               "ID каналов доступных для удаления можно посмотреть в <i><b>'Списке каналов'</b></i>")
     await msg.answer(text=del_msg, reply_markup=cancel_button)
     await state.set_state(GMS.deleting_channel)
 
@@ -166,7 +166,7 @@ async def cancel_action(msg: Message, state: FSMContext):
 async def error_input(msg: Message):
     """Хэндлер отлавливает некорректный ввод при добавлении канала"""
     await msg.answer(text="Не корректный ввод!\n"
-                          "ID канала должно быть целым отрицательным числом!\n"
+                          "ID канала должно быть <b>целым отрицательным числом!</b>\n"
                           "Пример: -1001972569167\n", reply_markup=cancel_button)
 
 
@@ -174,19 +174,5 @@ async def error_input(msg: Message):
 async def error_input(msg: Message):
     """Хэндлер отлавливает некорректный ввод при удалении канала"""
     await msg.answer(text="Не корректный ввод!\n"
-                          "ID канала должно быть целым отрицательным числом!\n"
+                          "ID канала должно быть <b>целым отрицательным числом!</b>\n"
                           "Пример: -1001972569167\n", reply_markup=cancel_button)
-
-# @admin_router.message(Command("ban"))
-# async  def handing_message(msg):
-#     await bot.ban_chat_member(chat_id=-1001513097504, user_id=6724839493)
-#
-#
-# @admin_router.message(Command("unban"))
-# async  def handing_message(msg):
-#     await bot.unban_chat_member(chat_id=-1001513097504, user_id=6724839493)
-
-
-# @admin_router.message(F.forward_from.as_('reply'))
-# async def member_info(reply_msg: Message, reply):
-#     print(reply.id)

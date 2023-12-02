@@ -17,12 +17,10 @@ async def start_up():
     await channels_load()
     # Загружаем варианты подписок
     await sub_settings_load()
-    # Запускаем цикл проверки подписок
-    # await cycle_controlling_subscriptions_start()
     #  Пропускаем скопившиеся апдэйты
     await bot.delete_webhook(drop_pending_updates=True)
     # Стартуем! Я начну стрелять!
-    print('Bot is working!')
+    print('Bot is work!')
     await dp.start_polling(bot)
 
 

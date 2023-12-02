@@ -38,7 +38,8 @@ class BotBase:
 
             # Таблица с настройками подписок. Что бы при перезапуске бота не настраивать заново
             await self.connection.execute("CREATE TABLE IF NOT EXISTS sub_settings"
-                                          "(period VARCHAR(10) PRIMARY KEY,"
+                                          # Строка будет хранить сразу и период подписки и ID канала для этого варианта
+                                          "(chl_id_period VARCHAR(100) PRIMARY KEY ," 
                                           "cost INT);")
 
         except PostgresSyntaxError as exc:
@@ -64,10 +65,14 @@ class BotBase:
         result = await self.connection.fetch("SELECT * FROM public.groups;")
         return result
 
+    async def get_paid_channels_list(self) -> List[Record]:
+        """Получение списка имеющихся закрытых каналов из общей таблицы с каналами"""
+        result = await self.connection.fetch("SELECT * FROM public.groups WHERE is_paid = true;")
+        return result
+
     async def delete_channel(self, channel_id: int):
         """Удаление канала из общей таблицы с каналами"""
-        result = await self.connection.fetch(f"DELETE FROM public.groups WHERE channel_id = {channel_id};")
-        return result
+        await self.connection.execute(f"DELETE FROM public.groups WHERE channel_id = {channel_id};")
 
     # ========== Методы управления подписками ==========
 
@@ -86,7 +91,7 @@ class BotBase:
         result = await self.connection.fetch(f"SELECT * FROM public.trail_subscription "
                                              f"WHERE user_id = {user_id} AND channel_id = {channel_id};")
 
-        return len(result) > 0  # Если пользователь уже получал пробную подписку в этом канале, то вернется False
+        return len(result) > 0  # Если пользователь уже получал пробную подписку в этом канале, то вернется True
 
     async def add_user_in_paid_channel(self, user_id: int, channel_id: int, subscription: int) -> None:
         """Метод добавляет пользователя в таблицу закрытого канала"""
@@ -99,20 +104,20 @@ class BotBase:
         result = await self.connection.fetch(f"SELECT * FROM public.channel_{abs(channel_id)};")
         return result
 
-    async def set_sub_setting(self, period: str, cost: int) -> None:
+    async def set_sub_setting(self, chl_id_period: str, cost: int) -> None:
         """Метод записывает в базу настройки для вариантов подписки"""
-        await self.connection.execute(f"INSERT INTO public.sub_settings (period, cost)"
-                                      f"VALUES ('{period}', {cost})"
-                                      f"ON CONFLICT (period) DO UPDATE SET cost = {cost};")
+        await self.connection.execute(f"INSERT INTO public.sub_settings (chl_id_period, cost)"
+                                      f"VALUES ('{chl_id_period}', {cost})"
+                                      f"ON CONFLICT (chl_id_period) DO UPDATE SET cost = {cost};")
 
     async def get_sub_setting(self) -> List[Record]:
         """Метод получения из БД вариантов подписки"""
         result = await self.connection.fetch("SELECT * FROM public.sub_settings;")
         return result
 
-    async def delete_subscription(self, period: str) -> None:
+    async def delete_subscription(self, chl_id_period: str) -> None:
         """Метод удаляет вариант подписки из базы"""
-        await self.connection.execute(f"DELETE FROM public.sub_settings WHERE period = '{period}';")
+        await self.connection.execute(f"DELETE FROM public.sub_settings WHERE chl_id_period = '{chl_id_period}';")
 
     async def get_user_from_channel(self, user_id, channel_id) -> List[Record]:
         """Метод получения пользователя из таблицы конкретного канала"""
@@ -125,3 +130,7 @@ class BotBase:
         await self.connection.execute(f"UPDATE public.channel_{abs(channel_id)} "
                                       f"SET end_of_subscription = {new_sub} "
                                       f"WHERE user_id = {user_id};")
+
+    async def delete_user_from_channel(self, user_id: int, channel_id: int) -> None:
+        """Метод удаления пользователя из таблицы конкретного канала"""
+        await self.connection.execute(f"DELETE FROM public.channel_{abs(channel_id)} WHERE user_id = {user_id}")

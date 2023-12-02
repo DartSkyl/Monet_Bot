@@ -9,7 +9,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 db = BotBase(DB_INFO[0], DB_INFO[1], DB_INFO[2], DB_INFO[3])
 
-bot = Bot(token=BOT_TOKEN)
+bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot=bot, storage=MemoryStorage())
 
 # В этом списке будем хранить ID всех администраторов
@@ -24,6 +24,8 @@ channels_dict = {
     "free": [],
     "is_paid": []
 }
+
+# Переписать!!!!!!!!!!!!!!!!!!!!!!!!!
 
 # В этом словаре хранятся варианты для платной подписки.
 # Ключ это срок подписки в сутках, а значение это стоимость.
@@ -62,6 +64,12 @@ async def sub_settings_load():
 
     # Прописать ситуация для первого запуска, когда нет даже ключа 0 для пробной подписки!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    # Так же вариант действий для удаления группы из бота
+
     st_list = await db.get_sub_setting()
     for elem in st_list:
-        subscription_dict[elem['period']] = elem['cost']
+        dict_content = elem['chl_id_period'].split('_')
+        if int(dict_content[0]) in subscription_dict:
+            subscription_dict[int(dict_content[0])][int(dict_content[1])] = elem['cost']
+        else:
+            subscription_dict[int(dict_content[0])] = {int(dict_content[1]): elem['cost']}
