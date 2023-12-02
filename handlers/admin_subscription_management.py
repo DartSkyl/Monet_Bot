@@ -15,7 +15,7 @@ from aiogram import F, html
 
 @admin_router.message(F.text == '2')
 async def test2(msg):
-    print(subscription_dict)
+    print(channels_dict)
 
 
 @admin_router.message(F.text == '⚙️ Посмотреть/удалить установленные подписки')
@@ -38,6 +38,8 @@ async def check_sub_settings(msg: Message) -> None:
 
 @admin_router.callback_query(SubDel.filter())
 async def sub_delete(callback: CallbackQuery, callback_data: SubDel) -> None:
+    """Хэндлер реагирует на нажатие кнопки inline клавиатуры для удаления вариантов подписки.
+    Результатом реакции является изменения сообщения и клавиатуры"""
     await SubManag.delete_subscription(chl_id=callback_data.chnl_id, period=callback_data.sub_period)
     await callback.answer()
     edit_text = ''
@@ -57,6 +59,7 @@ async def sub_delete(callback: CallbackQuery, callback_data: SubDel) -> None:
 
 @admin_router.message(F.text == '💵 Добавить платную подписку')
 async def set_paid_sub_step_1(msg: Message, state: FSMContext) -> None:
+    """Хэндлер запускает стэйт добавления варианта платной подписки"""
     m_text = ('Введите желаемый срок подписки и стоимость через пробел\n'
               '<i><b>Пример:</b></i> подписка на 30 дней стоимостью 100 рублей - "30 100" <b>без кавычек!</b>')
     # m_text = 'Выберете канал для добавления подписки:'
@@ -67,6 +70,7 @@ async def set_paid_sub_step_1(msg: Message, state: FSMContext) -> None:
 
 @admin_router.message(SM.set_paid_sub, F.text.regexp(r'\d{1,}\s\d{1,}$'))
 async def set_paid_sub_step_2(msg: Message, state: FSMContext) -> None:
+    """В хэндлере происходит выбор канала, на который происходит добавление варианта платной подписки"""
     sub_set = msg.text.split()
     if int(sub_set[0]) > 0:
         await state.set_data({'sub_info': [sub_set[0], int(sub_set[1])]})
@@ -169,16 +173,19 @@ async def add_subscription_2(msg: Message, state: FSMContext):
 
 @admin_router.message(SM.set_trail_sub)
 async def error_input_trail_sub(msg: Message) -> None:
+    """Хэндлер отлавливает некорректный ввод при добавлении платного варианта подписки"""
     await msg.answer(text='Неверный ввод!\nЧисло должно быть целым и положительным', reply_markup=cancel_button)
 
 
 @admin_router.message(SM.add_subscription_a_user)
 async def error_input_add_sub(msg: Message) -> None:
+    """Хэндлер отлавливает некорректный ввод при добавлении подписки пользователю в ручную"""
     await msg.answer(text='Неверный ввод!\nЧисло должно быть целым и положительным', reply_markup=cancel_button)
 
 
 @admin_router.message(SM.set_paid_sub)
 async def error_input_paid_sub(msg: Message) -> None:
+    """Хэндлер отлавливает некорректный ввод при добавлении платного варианта подписки"""
     await msg.answer(text='Неверный ввод!\n'
                           'Пример: подписка на 30 дней стоимостью 100 рублей - '
                           '"30 100" без кавычек и аккуратнее с пробелами',
