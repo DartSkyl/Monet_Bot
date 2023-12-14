@@ -1,42 +1,64 @@
 import time
-from asyncio import sleep
 from loader import bot, db, channels_dict, subscription_dict
 from aiogram.exceptions import TelegramBadRequest
 
 
-async def cycle_controlling_subscriptions_start() -> None:
-    await cycle_controlling_subscriptions()
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.events import EVENT_JOB_MISSED
+import logging
+
+
+logging.basicConfig()
+logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
 
 async def cycle_controlling_subscriptions() -> None:
-    """Данная функция с определенной периодичностью проверяет состояние подписки пользователей"""
-    while True:
-        print('\nNew cycle\n')
-        # Проходимся по всем закрытым каналам
-        for ch_id in channels_dict['is_paid']:
-            # Формируем список из пользователей и окончаний их подписки
-            s_lst = await SubManag.check_subscription(channel_id=ch_id)
-            if len(s_lst) > 0:  # Данная проверка нужна, на случай если в группе еще никого нет и список по ней пуст
-                for user in s_lst:
-                    # Смотрим, через сколько заканчивается подписка
-                    test_sub = int(user['end_of_subscription']) - int(time.time())
-                    if test_sub > 0:
-                        print(test_sub)
-                    else:
-                        try:
-                            await bot.ban_chat_member(chat_id=ch_id, user_id=user['user_id'],
-                                                      # Разбаним через 30 секунд, что бы после оплаты
-                                                      # подписки пользователь мог вернуться
-                                                      until_date=(int(time.time()) + 31))
-                            await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
-                            # На случай, если пользователя с таким ID больше не существует
-                        except TelegramBadRequest as exc:
-                            print(f'Пользователя с таким ID ({user["user_id"]}) больше не существует!')
-                        finally:
-                            await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
-        # В скобочках асинхронной функции sleep(), в секундах, указана периодичность,
-        # с которой цикл проверяет подписки по всем группам и пользователям
-        await sleep(60)
+    """Данная функция передается планировщику, в качестве задачи которая проверяет подписку пользователей"""
+    print('\nNew cycle\n')
+    # Проходимся по всем закрытым каналам
+    for ch_id in channels_dict['is_paid']:
+        # Формируем список из пользователей и окончаний их подписки
+        s_lst = await SubManag.check_subscription(channel_id=ch_id)
+        if len(s_lst) > 0:  # Данная проверка нужна, на случай если в группе еще никого нет и список по ней пуст
+            for user in s_lst:
+                # Смотрим, через сколько заканчивается подписка
+                subscription = int(user['end_of_subscription']) - int(time.time())
+                if subscription > 0:
+                    print(subscription)
+                else:
+                    try:
+                        await bot.ban_chat_member(chat_id=ch_id, user_id=user['user_id'],
+                                                  # Разбаним через 60 секунд, что бы после оплаты
+                                                  # подписки пользователь мог вернуться
+                                                  until_date=(int(time.time()) + 60))
+                        await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
+                        print(f'User with ID {user["user_id"]} kicked!')
+                        # На случай, если пользователя с таким ID больше не существует
+                    except TelegramBadRequest as exc:
+                        print(f'Пользователя с таким ID ({user["user_id"]}) больше не существует!')
+                    finally:
+                        await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
+
+
+async def check_subscription():
+    """Функция создает экземпляр планировщика с одной единственной задачей: проверять
+    подписки пользователей один раз в заданный промежуток времени.
+    Данный планировщик не взаимодействует с другими планировщиками и не имеет постоянного хранилища"""
+    sub_scheduler = AsyncIOScheduler(timezone='Europe/Moscow')
+
+    sub_scheduler.add_job(
+        func=cycle_controlling_subscriptions,
+        trigger='interval', hours=2,  # Проверка происходит каждые два часа
+        id='sub_control',
+        replace_existing=True
+    )
+
+    sub_scheduler.add_listener(missed_exec, EVENT_JOB_MISSED)
+    sub_scheduler.start()
+
+
+def missed_exec(event):
+    print('Missed!', event.job_id)
 
 
 class SubManag:

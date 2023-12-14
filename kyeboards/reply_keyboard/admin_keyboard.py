@@ -54,6 +54,7 @@ auto_posting = ReplyKeyboardBuilder()
 
 ap_buttons = [
     KeyboardButton(text='📅 Посмотреть очередь публикаций'),
+    KeyboardButton(text='⚙️ Настройка очереди публикаций'),
     KeyboardButton(text='➕ Добавить публикацию в очередь'),
     KeyboardButton(text='➖ Удалить публикацию из очереди'),
     KeyboardButton(text='Назад'),
@@ -69,3 +70,11 @@ cancel_button = ReplyKeyboardBuilder()
 c_button = [KeyboardButton(text='🚫 Отмена')]
 cancel_button.add(*c_button)
 cancel_button = cancel_button.as_markup(resize_keyboard=True)
+
+cancel_button_2 = ReplyKeyboardBuilder()
+c_button = [
+            KeyboardButton(text='✔️ Готово'),
+            KeyboardButton(text='🚫 Отмена')
+            ]
+cancel_button_2.add(*c_button)
+cancel_button_2 = cancel_button_2.as_markup(resize_keyboard=True)

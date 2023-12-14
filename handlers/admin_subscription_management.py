@@ -1,4 +1,3 @@
-import time
 from loader import bot, channels_dict, subscription_dict, db
 from utils import admin_router, SubManag
 from states import SubscriptionManagement as SM
@@ -165,7 +164,9 @@ async def add_subscription_2(msg: Message, state: FSMContext):
         channel_id=sub_info['ch_id'],
         period=int(msg.text)
     )
-    ans_text = (f'Подписка пользователю {sub_info["uid"]} на канал {sub_info["ch_name"]} '
+    # На всякий случай разбаним, а то автоматический разбаниватель не всегда работает
+    await bot.unban_chat_member(chat_id=sub_info['ch_id'], user_id=sub_info['uid'])
+    ans_text = (f'Подписка пользователю {sub_info["uid"]} на канал {html.quote(sub_info["ch_name"])} '
                 f'сроком на {msg.text} дня(дней) добавлена')
     await msg.answer(text=ans_text, reply_markup=sub_manag)
     await state.clear()

@@ -22,6 +22,18 @@ class AddSubForUser(CallbackData, prefix='addsub'):
     chl_name: str
 
 
+class QueueSelection(CallbackData, prefix='queue'):
+    chnl_id: int
+    chnl_name: str
+
+
+class TriggerSettings(CallbackData, prefix='trigger'):
+    trigger_itself: str = 'None'
+    interval: str = 'None'
+    day_of_the_week: str = 'None'
+    next_step: str = 'None'
+
+
 def del_board(chl_list):
     """Функция возвращает inline клавиатуру для удаления подписок"""
     sub_del_board = InlineKeyboardBuilder()
@@ -63,3 +75,37 @@ async def add_sub_keyboard():
                              callback_data=AddSubForUser(chl_id=ch_id, chl_name=chl_info.title))
     add_sub_board.adjust(1)
     return add_sub_board.as_markup(resize_keyboard=True)
+
+
+async def queue_selection_keyboard():
+    queues_keyboard = InlineKeyboardBuilder()
+    channels_list = await db.get_channel_list()
+    for channel in channels_list:
+        queues_keyboard.button(text=channel['channel_name'],
+                               callback_data=QueueSelection(
+                                   chnl_id=channel['channel_id'],
+                                   chnl_name=channel['channel_name'])
+                               )
+    queues_keyboard.adjust(1)
+    return queues_keyboard.as_markup(resize_keyboard=True)
+
+
+async def tr_set_keyboard(step):
+    trigger_keyboard = InlineKeyboardBuilder()
+    if step == 1:
+        trigger_keyboard.button(text='По дням недели в определенное время',
+                                callback_data=TriggerSettings(trigger_itself='cron'))
+        trigger_keyboard.button(text='Определенными интервалами',
+                                callback_data=TriggerSettings(trigger_itself='interval'))
+        trigger_keyboard.adjust(1)
+        return trigger_keyboard.as_markup(resize_keyboard=True, one_time_keyboard=True)
+    elif step == 2:
+        # mon,tue,wed,thu,fri,sat,sun
+        day_of_week = {'Понедельник': 'mon', 'Вторник': 'tue', 'Среда': 'wed',
+                       'Четверг': 'thu', 'Пятница': 'fri', 'Суббота': 'sat', 'Воскресенье': 'sun', 'Каждый день': '*'}
+        for day_key, day_value in day_of_week.items():
+            trigger_keyboard.button(text=day_key, callback_data=TriggerSettings(day_of_the_week=day_value))
+        trigger_keyboard.button(text='Отмена', callback_data=TriggerSettings(next_step='cancel'))
+        trigger_keyboard.button(text='Дальше >>', callback_data=TriggerSettings(next_step='next_step'))
+        trigger_keyboard.adjust(2)
+        return trigger_keyboard.as_markup(resize_keyboard=True)

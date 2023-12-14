@@ -1,0 +1,147 @@
+import logging
+from config_data.config import PG_URI
+from loader import db
+
+from apscheduler.events import EVENT_JOB_MISSED, EVENT_JOB_ERROR
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.executors.asyncio import AsyncIOExecutor
+
+from aiogram import html
+
+
+def my_listener(event):
+    if event.code == EVENT_JOB_MISSED:
+        print('Missed')
+    else:
+        print('Error')
+
+
+logging.basicConfig()
+logging.getLogger('apscheduler').setLevel(logging.DEBUG)
+
+dict_queue = dict()
+
+_general_scheduler = AsyncIOScheduler()
+_general_scheduler.add_listener(my_listener, EVENT_JOB_MISSED | EVENT_JOB_ERROR)
+
+
+async def publish_post():
+    print('Work!')
+
+
+async def create_publish_queue():
+    channels = await db.get_channel_list()
+    for channel in channels:
+        dict_queue[channel['channel_id']] = AutoPosting(channel['channel_id'])
+        await dict_queue[channel['channel_id']].upload_queue_info()
+    _general_scheduler.start()
+
+
+class AutoPosting:
+    """Класс позволяет реализовать отдельную очередь публикаций для каждой группы"""
+
+    def __init__(self, chn_id: int) -> None:
+        """Планировщик общий для всех. Отельными будут хранилища заданий и экзекуторы"""
+        self._scheduler = _general_scheduler
+        self._scheduler.add_jobstore(jobstore='sqlalchemy', alias=f'{chn_id}', url=PG_URI, tablename=f'aps{chn_id}')
+        self._scheduler.add_executor(executor=AsyncIOExecutor(), alias=f'{chn_id}')
+        self._alias = f'{chn_id}'  # Свой псевдоним, что бы использовать его и не передавать каждый раз заново
+        self._trigger_settings = None
+        self.queue_info = None
+
+    async def save_trigger_setting(self, trigger_data):
+        self._trigger_settings = trigger_data
+        await db.save_queue_info(int(self._alias), self.queue_info)
+
+    async def get_queue_info(self, chnl_name):
+        """Здесь формируется строка необходимая для отображения установленных настроек очереди публикаций"""
+
+        # Если self.queue_info == None значит настройки еще не производились или
+        # их нужно загрузить из БД после перезапуска бота
+
+        if self.queue_info:
+            queue_info_str = self.queue_info.split('_')
+            # Если в списке queue_info_str два элемента (дни и время) значит это настройки для триггера класса cron
+
+            if len(queue_info_str) > 1:
+                queue_info_str = [queue_info_str[0].split(), queue_info_str[1].split()]
+                day_str = ''
+                time_str = ''
+                for day in queue_info_str[0]:
+                    day_str += day + ' '
+                for tm in queue_info_str[1]:
+                    time_str += tm + ' '
+
+                ready_string = (f'Очередь публикаций канала <i><b>{html.quote(chnl_name)}</b></i>\n\n'
+                                f'Основной принцип работы: <b>По дням недели</b>\n'
+                                f'Выбранные дни: <b>{day_str}</b>\n'
+                                f'Выбранное время: <b>{time_str}</b>')
+
+                return ready_string
+
+            # В ином случае это триггер interval (только время)
+            else:
+                ready_string = (f'Очередь публикаций канала <i><b>{html.quote(chnl_name)}</b></i>\n\n'
+                                f'Основной принцип работы: <b>Определенным интервалом</b>'
+                                f'Установленный интервал: <b>{queue_info_str[0]}</b>')
+
+                return ready_string
+
+        else:
+            return 'Очередь еще не настроена!'
+
+    async def set_trigger(self):
+        """Здесь формируется настройки для очереди публикаций"""
+        # Сначала чистим исполнитель от уже установленных задач
+        task_to_be_deleted = self._scheduler.get_jobs(jobstore=self._alias)
+        for task in task_to_be_deleted:
+            self._scheduler.remove_job(job_id=task.id, jobstore=self._alias)
+
+        #  Если self.trigger_settings является списком, значит триггер будет cron
+        if isinstance(self._trigger_settings, list):
+            days = ','.join(self._trigger_settings[0])
+            selected_time = self._trigger_settings[1]
+
+            for time_ex in selected_time:
+                time_execute = time_ex.split(':')
+                job_id = '_'.join([self._alias, time_ex])
+                self._scheduler.add_job(func=publish_post, trigger='cron',
+                                        day_of_week=days, hour=time_execute[0], minute=time_execute[1],
+                                        jobstore=self._alias, executor=self._alias, id=job_id, max_instances=1,
+                                        replace_existing=True)
+
+            self._scheduler.print_jobs(jobstore=self._alias)
+
+        # Если self.trigger_settings является строкой, значит триггер будет interval
+        elif isinstance(self._trigger_settings, str):
+            time_execute = self._trigger_settings.split(':')
+            job_id = '_'.join([self._alias, 'interval'])
+            self._scheduler.add_job(func=publish_post, trigger='interval',
+                                    hours=int(time_execute[0]), minutes=int(time_execute[1]),
+                                    jobstore=self._alias, executor=self._alias, id=job_id, max_instances=1,
+                                    replace_existing=True)
+
+            self._scheduler.print_jobs(jobstore=self._alias)
+
+        else:
+            print('TriggerError')
+
+    async def upload_queue_info(self):
+        """Здесь происходит выгрузка информации об очереди публикации если таковая имеется"""
+        try:
+            self.queue_info = (await db.get_queue_info(int(self._alias)))[0]['settings_info']
+        # Если и в БД пусто, то вылезет ошибка. Проигнорируем её
+        except IndexError:
+            pass
+
+    async def add_post(self) -> None:
+        pass
+
+    async def remove_post(self) -> None:
+        pass
+
+    async def get_posts_list(self):
+        with open('file.txt', 'a') as file_in:
+            self._scheduler.print_jobs(jobstore=self._alias, out=file_in)
+        pr_jobs = self._scheduler.get_jobs(jobstore=self._alias)
+        print(pr_jobs)

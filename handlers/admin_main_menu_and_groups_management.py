@@ -1,5 +1,5 @@
 from loader import bot, db, channels_dict
-from utils import admin_router, cycle_controlling_subscriptions_start
+from utils import admin_router
 from states import GroupManagementStates as GMS
 
 # Импорт всех клавиатур администратора
@@ -30,18 +30,19 @@ keyboards_dict = {
 
 
 @admin_router.message(Command('start'))
-async def start(msg: Message) -> None:
+async def start(msg: Message, state: FSMContext) -> None:
     await msg.answer(f'Добро пожаловать, <b>{msg.from_user.first_name}</b>!'
                      f'\nВыберете действие:',
                      reply_markup=main_admin_keyboard)
-    await cycle_controlling_subscriptions_start()
+    await state.clear()
 
 
 @admin_router.message(F.text.in_(keyboards_dict))
-async def admins_menu(msg: Message) -> None:
+async def admins_menu(msg: Message, state: FSMContext) -> None:
     """ Хэндлер реализует навигацию по администраторскому меню через словарь"""
 
     await msg.answer(text='Выберете операцию:', reply_markup=keyboards_dict[msg.text])
+    await state.clear()
 
 
 @admin_router.message(F.text == "📃 Список каналов")
@@ -112,7 +113,6 @@ async def adding_free_ch(msg: Message, state: FSMContext):
         await msg.answer(text='Канал с таким ID не найден или бот не является администратором данного канала!\n'
                               'Уточните ID канала и повторите попытку', reply_markup=cancel_button)
         await state.set_state(GMS.adding_channel)  # Устанавливаем стэйт заново
-        print(exc)
 
     except UniqueViolationError as exc:
         # Данное исключение будет вызвано если канал с таким ID уже есть в базе данных

@@ -2,5 +2,6 @@
 venv/
 venv_2/
 *.log
-/test_file.py
+/z_bot/test_module.py
 *__pycache__*
+/z_bot/

@@ -13,4 +13,6 @@ DB_INFO = (
     os.getenv("db_name"),
     os.getenv("db_host"))
 
+PG_URI = f"postgresql+psycopg2://{DB_INFO[0]}:{DB_INFO[1]}@{DB_INFO[3]}/{DB_INFO[2]}"
+
 MAIN_GROUP_ID = os.getenv("main_group_id")

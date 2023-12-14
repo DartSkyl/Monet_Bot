@@ -6,6 +6,8 @@ from config_data.config import BOT_TOKEN, DB_INFO, MAIN_GROUP_ID
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
+# from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 
 db = BotBase(DB_INFO[0], DB_INFO[1], DB_INFO[2], DB_INFO[3])
 

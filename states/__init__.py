@@ -1,7 +1,8 @@
-from .admins_states import GroupManagementStates, SubscriptionManagement
+from .admins_states import GroupManagementStates, SubscriptionManagement, AutoPost
 
 
 __all__ = (
     "GroupManagementStates",
-    "SubscriptionManagement"
+    "SubscriptionManagement",
+    "AutoPost"
 )
