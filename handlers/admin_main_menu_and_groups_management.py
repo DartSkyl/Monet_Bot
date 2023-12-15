@@ -1,4 +1,4 @@
-from loader import bot, db, channels_dict
+from loader import bot, db, channels_dict, subscription_dict
 from utils import admin_router, add_queue, delete_queue, SubManag
 from states import GroupManagementStates as GMS
 
@@ -96,6 +96,7 @@ async def adding_free_ch(msg: Message, state: FSMContext):
         # Так же добавляем канал в оперативную память
         if paid['paid']:
             channels_dict['is_paid'].append(added_ch.id)
+            subscription_dict[int(msg.text)] = {0: 0}
             # И сразу создадим для канала отдельную таблицу,
             # что бы контролировать подписки пользователей
             await db.add_channel_table(int(msg.text))

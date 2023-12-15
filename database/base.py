@@ -80,8 +80,11 @@ class BotBase:
         await self.connection.execute(f"DELETE FROM public.all_channels WHERE channel_id = {channel_id};")
 
     async def delete_channel_table(self, channel_id: int):
-        """Если канал платный, то у него есть своя таблица, которую нужно удалить, если что"""
-        await self.connection.execute(f"DROP TABLE public.channel_{abs(channel_id)}")
+        """Если канал платный, то у него есть своя таблица, которую нужно удалить, а так же
+        все пробные подписки связанные с этим каналом"""
+        await self.connection.execute(f"DROP TABLE public.channel_{abs(channel_id)};"
+                                      # Не проверено
+                                      f"DELETE FROM public.trail_subscription WHERE channel_id = {channel_id}")
 
     # ========== Методы управления подписками ==========
 

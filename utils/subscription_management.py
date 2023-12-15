@@ -136,7 +136,10 @@ class SubManag:
     @staticmethod
     async def clear_channel_subscription(channel_id: int) -> None:
         """Метод зачищает всю информацию о подписках канала из оперативной памяти и БД при удалении канала"""
-        for period in subscription_dict[channel_id]:
-            for_db = '_'.join([str(channel_id), str(period)])
-            await db.delete_subscription(chl_id_period=for_db)
-        subscription_dict.pop(channel_id)
+        try:
+            for period in subscription_dict[channel_id]:
+                for_db = '_'.join([str(channel_id), str(period)])
+                await db.delete_subscription(chl_id_period=for_db)
+            subscription_dict.pop(channel_id)
+        except KeyError:
+            pass
