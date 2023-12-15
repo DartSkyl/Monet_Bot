@@ -25,8 +25,8 @@ _general_scheduler = AsyncIOScheduler()
 _general_scheduler.add_listener(my_listener, EVENT_JOB_MISSED | EVENT_JOB_ERROR)
 
 
-async def publish_post():
-    print('Work!')
+async def publish_post(channel_id: int):
+    print(f'Works! Channel ID: {-channel_id}')
 
 
 async def create_publish_queue():
@@ -118,7 +118,7 @@ class AutoPosting:
             for time_ex in selected_time:
                 time_execute = time_ex.split(':')
                 job_id = '_'.join([self._alias, time_ex])
-                self._scheduler.add_job(func=publish_post, trigger='cron',
+                self._scheduler.add_job(func=publish_post, kwargs={'channel_id': int(self._alias)}, trigger='cron',
                                         day_of_week=days, hour=time_execute[0], minute=time_execute[1],
                                         jobstore=self._alias, executor=self._alias, id=job_id, max_instances=1,
                                         replace_existing=True)
@@ -129,7 +129,7 @@ class AutoPosting:
         elif isinstance(self._trigger_settings, str):
             time_execute = self._trigger_settings.split(':')
             job_id = '_'.join([self._alias, 'interval'])
-            self._scheduler.add_job(func=publish_post, trigger='interval',
+            self._scheduler.add_job(func=publish_post, kwargs={'channel_id': int(self._alias)}, trigger='interval',
                                     hours=int(time_execute[0]), minutes=int(time_execute[1]),
                                     jobstore=self._alias, executor=self._alias, id=job_id, max_instances=1,
                                     replace_existing=True)

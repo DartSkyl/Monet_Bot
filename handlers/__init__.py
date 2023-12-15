@@ -3,5 +3,7 @@ from . import (
     admin_subscription_management,
     users_handlers,
     chat_member_handlers,
-    admin_autoposting
+    admin_autoposting_settings,
+    admin_autoposting_view_queue,
+    admin_autoposting_publication_management
 )

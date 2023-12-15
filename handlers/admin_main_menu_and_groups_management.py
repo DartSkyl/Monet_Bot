@@ -96,7 +96,9 @@ async def adding_free_ch(msg: Message, state: FSMContext):
         # Так же добавляем канал в оперативную память
         if paid['paid']:
             channels_dict['is_paid'].append(added_ch.id)
+            # Сразу установим начальные настройки для пробной подписки:
             subscription_dict[int(msg.text)] = {0: 0}
+            await db.set_sub_setting(chl_id_period=(msg.text + '_' + '0'), cost='0')
             # И сразу создадим для канала отдельную таблицу,
             # что бы контролировать подписки пользователей
             await db.add_channel_table(int(msg.text))

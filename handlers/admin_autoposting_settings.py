@@ -13,24 +13,7 @@ week = {'mon': 'Понедельник', 'tue': 'Вторник', 'wed': 'Сре
         'fri': 'Пятница', 'sat': 'Суббота', 'sun': 'Воскресенье', '*': 'Каждый день'}
 
 
-@admin_router.message(Command('start'))
-async def start(message: Message):
-    await message.answer('Bot ready!', reply_markup=auto_posting)
 
-
-@admin_router.message(F.text == '📅 Посмотреть очередь публикаций')
-async def publish_queue(message: Message, state: FSMContext):
-    """Активирует просмотр очередей публикаций"""
-    select_keyboard = await queue_selection_keyboard()
-    await message.answer(text='Выберете очередь публикаций для просмотра:', reply_markup=select_keyboard)
-    await state.set_state(AutoPost.check_queue)
-
-
-@admin_router.callback_query(QueueSelection.filter(), AutoPost.check_queue)
-async def check_queue(callback: CallbackQuery, callback_data: QueueSelection, state: FSMContext):
-    await callback.answer()
-    msg_text = await dict_queue[callback_data.chnl_id].get_queue_info(callback_data.chnl_name)
-    await callback.message.answer(text=msg_text)
 
 
 # ==========Настройка очереди публикаций ==========
