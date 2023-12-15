@@ -32,19 +32,32 @@ async def publish_post():
 async def create_publish_queue():
     channels = await db.get_channel_list()
     for channel in channels:
-        dict_queue[channel['channel_id']] = AutoPosting(channel['channel_id'])
+        dict_queue[channel['channel_id']] = AutoPosting(abs(channel['channel_id']))
         await dict_queue[channel['channel_id']].upload_queue_info()
     _general_scheduler.start()
+
+
+async def add_queue(chnl_id: int):
+    dict_queue[chnl_id] = AutoPosting(str(abs(chnl_id)))
+
+
+async def delete_queue(chnl_id: int):
+    dict_queue.pop(chnl_id)
+    _general_scheduler.remove_jobstore(alias=f'{abs(chnl_id)}')
+    _general_scheduler.remove_executor(alias=f'{abs(chnl_id)}')
+    await db.delete_jobstore_table(channel_id=chnl_id)
 
 
 class AutoPosting:
     """Класс позволяет реализовать отдельную очередь публикаций для каждой группы"""
 
-    def __init__(self, chn_id: int) -> None:
+    def __init__(self, chn_id: str) -> None:
         """Планировщик общий для всех. Отельными будут хранилища заданий и экзекуторы"""
         self._scheduler = _general_scheduler
         self._scheduler.add_jobstore(jobstore='sqlalchemy', alias=f'{chn_id}', url=PG_URI, tablename=f'aps{chn_id}')
-        self._scheduler.add_executor(executor=AsyncIOExecutor(), alias=f'{chn_id}')
+        self._executor = AsyncIOExecutor()
+        self._scheduler.add_executor(executor=self._executor, alias=f'{chn_id}')
+        self._executor.start(scheduler=self._scheduler, alias=f'{chn_id}')
         self._alias = f'{chn_id}'  # Свой псевдоним, что бы использовать его и не передавать каждый раз заново
         self._trigger_settings = None
         self.queue_info = None

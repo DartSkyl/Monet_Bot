@@ -132,3 +132,11 @@ class SubManag:
     async def delete_user(user_id: int, channel_id: int) -> None:
         """Метод удаления записи пользователя из БД"""
         await db.delete_user_from_channel(user_id=user_id, channel_id=channel_id)
+
+    @staticmethod
+    async def clear_channel_subscription(channel_id: int) -> None:
+        """Метод зачищает всю информацию о подписках канала из оперативной памяти и БД при удалении канала"""
+        for period in subscription_dict[channel_id]:
+            for_db = '_'.join([str(channel_id), str(period)])
+            await db.delete_subscription(chl_id_period=for_db)
+        subscription_dict.pop(channel_id)

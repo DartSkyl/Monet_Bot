@@ -76,8 +76,12 @@ class BotBase:
         return result
 
     async def delete_channel(self, channel_id: int):
-        """Удаление канала из общей таблицы с каналами"""
+        """Удаление канала из общей таблицы с каналами """
         await self.connection.execute(f"DELETE FROM public.all_channels WHERE channel_id = {channel_id};")
+
+    async def delete_channel_table(self, channel_id: int):
+        """Если канал платный, то у него есть своя таблица, которую нужно удалить, если что"""
+        await self.connection.execute(f"DROP TABLE public.channel_{abs(channel_id)}")
 
     # ========== Методы управления подписками ==========
 
@@ -153,3 +157,8 @@ class BotBase:
         result = await self.connection.fetch(f"SELECT settings_info FROM public.queue_info "
                                              f"WHERE channel_id = {channel_id};")
         return result
+
+    async def delete_jobstore_table(self, channel_id: int) -> None:
+        """Метод удаляет таблицу с заданиями планировщика при удалении канала, а так же запись из таблицы queue_info"""
+        await self.connection.execute(f'DROP TABLE public.aps{abs(channel_id)};'
+                                      f'DELETE FROM public.queue_info WHERE channel_id = {abs(channel_id)}')

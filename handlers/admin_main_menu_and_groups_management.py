@@ -1,5 +1,5 @@
 from loader import bot, db, channels_dict
-from utils import admin_router
+from utils import admin_router, add_queue, delete_queue, SubManag
 from states import GroupManagementStates as GMS
 
 # Импорт всех клавиатур администратора
@@ -77,7 +77,7 @@ async def free_channel_add(msg: Message, state: FSMContext):
         await state.set_data({'paid': True})
 
     await msg.answer("Введите ID канала\n"
-                     "ID канала должно быть <b>целый отрицательным числом!</b>\n"
+                     "ID канала должно быть <b>целым отрицательным числом!</b>\n"
                      "Пример: -1001972569167\n"
                      "Если вы не знаете ID канала, то перешлите любой пост из этого канала боту "
                      "@LeadConverterToolkitBot\n"
@@ -99,8 +99,10 @@ async def adding_free_ch(msg: Message, state: FSMContext):
             # И сразу создадим для канала отдельную таблицу,
             # что бы контролировать подписки пользователей
             await db.add_channel_table(int(msg.text))
+            await add_queue(int(msg.text))
         else:
             channels_dict['free'].append(added_ch.id)
+            await add_queue(int(msg.text))
 
         reply_msg_text = ("Канал добавлен!\n"
                           f"Название канала - {html.bold(html.quote(added_ch.title))}\n")
@@ -146,6 +148,9 @@ async def delete_channel(msg: Message, state: FSMContext) -> None:
                 channels_dict['free'].remove(int(msg.text))
             else:
                 channels_dict['is_paid'].remove(int(msg.text))
+                await db.delete_channel_table(int(msg.text))
+                await SubManag.clear_channel_subscription(int(msg.text))
+            await delete_queue(int(msg.text))
         else:
             raise ValueError
 

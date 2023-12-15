@@ -14,7 +14,7 @@ from aiogram import F, html
 
 @admin_router.message(F.text == '2')
 async def test2(msg):
-    print(channels_dict)
+    print(subscription_dict)
 
 
 @admin_router.message(F.text == '⚙️ Посмотреть/удалить установленные подписки')
@@ -22,17 +22,26 @@ async def check_sub_settings(msg: Message) -> None:
     """Хэндлер выводит актуальную информацию по подпискам"""
     paid_chn_list = await db.get_paid_channels_list()
     sub_text = ''
-    for elem in paid_chn_list:
-        chn_name = ('<i>==========</i>\n<i><b>' + html.quote(elem['channel_name']) + '</b></i>:\n')
-        sub_text += chn_name
-        for period, cost in sorted(subscription_dict[elem['channel_id']].items()):
-            if period == 0:
-                sub_text += (f'Пробный период {int(cost / (60 * 60 * 24))} дня/дней\n' if (cost / (60 * 60 * 24)) > 0
-                             else 'Пробная подписка отключена\n')
-            else:
-                sub_text += f'Подписка на {period} дня/дней, стоимость {cost} рублей\n'
 
-    await msg.answer(text=sub_text, reply_markup=del_board(paid_chn_list))
+    for elem in paid_chn_list:
+        chn_name = f'<i>==========</i>\n<i><b>{html.quote(elem["channel_name"])} </b></i>:\n'
+        sub_text += chn_name
+        try:
+            for period, cost in sorted(subscription_dict[elem['channel_id']].items()):
+                if period == 0:
+                    sub_text += (f'Пробный период {int(cost / (60 * 60 * 24))} дня/дней\n' if (cost / (60 * 60 * 24)) > 0
+                                 else 'Пробная подписка отключена\n')
+                else:
+                    sub_text += f'Подписка на {period} дня/дней, стоимость {cost} рублей\n'
+        except KeyError:
+            pass
+
+    try:
+        await msg.answer(text=sub_text, reply_markup=del_board(paid_chn_list))
+    except TelegramBadRequest:
+        await msg.answer(text='Здесь слишком пусто')
+    except KeyError:
+        await msg.answer(text='Операций с подписками еще не производились')
 
 
 @admin_router.callback_query(SubDel.filter())
