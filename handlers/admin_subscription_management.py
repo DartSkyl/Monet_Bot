@@ -1,7 +1,7 @@
 from loader import bot, channels_dict, subscription_dict, db
 from utils import admin_router, SubManag
 from states import SubscriptionManagement as SM
-from kyeboards import (
+from keyboards import (
     cancel_button, main_admin_keyboard,
     sub_manag, del_board, SubDel,
     add_sub_keyboard, AddSubForUser,

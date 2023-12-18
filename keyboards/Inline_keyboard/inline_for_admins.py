@@ -4,6 +4,9 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder
 from aiogram.filters.callback_data import CallbackData
 
 
+# ========== Классы коллбэков ==========
+
+
 class SubAddForChannel(CallbackData, prefix='sub'):
     """Класс коллбэков для добавления варианта подписки на канал"""
     chn_id: str
@@ -23,15 +26,25 @@ class AddSubForUser(CallbackData, prefix='addsub'):
 
 
 class QueueSelection(CallbackData, prefix='queue'):
+    """Класс коллбэков для выбора очереди публикаций"""
     chnl_id: int
     chnl_name: str
 
 
 class TriggerSettings(CallbackData, prefix='trigger'):
+    """Класс коллбэков для настройки очередей публикаций"""
     trigger_itself: str = 'None'
     interval: str = 'None'
     day_of_the_week: str = 'None'
     next_step: str = 'None'
+
+
+class AddingPublication(CallbackData, prefix='add_post'):
+    """Класс коллбэков для добавления публикаций"""
+    publication_type: str
+
+
+# ========== Сами клавиатуры ==========
 
 
 def del_board(chl_list):
@@ -78,6 +91,7 @@ async def add_sub_keyboard():
 
 
 async def queue_selection_keyboard():
+    """Клавиатура для выбора очереди публикаций"""
     queues_keyboard = InlineKeyboardBuilder()
     channels_list = await db.get_channel_list()
     for channel in channels_list:
@@ -91,6 +105,7 @@ async def queue_selection_keyboard():
 
 
 async def tr_set_keyboard(step):
+    """Клавиатура для настройки очереди публикаций"""
     trigger_keyboard = InlineKeyboardBuilder()
     if step == 1:
         trigger_keyboard.button(text='По дням недели в определенное время',
@@ -109,3 +124,17 @@ async def tr_set_keyboard(step):
         trigger_keyboard.button(text='Дальше >>', callback_data=TriggerSettings(next_step='next_step'))
         trigger_keyboard.adjust(2)
         return trigger_keyboard.as_markup(resize_keyboard=True)
+
+
+async def publication_type():
+    """Клавиатура для выбора типа публикации"""
+    post_type_keyboard = InlineKeyboardBuilder()
+    types_dict = {'Текст': 'text', 'Картинка + Текст': 'pic_text', 'Картинка': 'pic', 'Видео + Текст': 'video_text',
+                  'Видео': 'video', 'Видеосообщение': 'video_note', 'Файл + Текст': 'file_text', 'Файл': 'file'}
+
+    for post_type, type_id in types_dict.items():
+        post_type_keyboard.button(text=post_type, callback_data=AddingPublication(publication_type=type_id))
+    post_type_keyboard.button(text='Отмена', callback_data=AddingPublication(publication_type='cancel'))
+
+    post_type_keyboard.adjust(2)
+    return post_type_keyboard.as_markup(resize_keyboard=True)

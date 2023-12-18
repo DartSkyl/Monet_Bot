@@ -1,6 +1,6 @@
 from utils import admin_router, dict_queue
 from states import AutoPost
-from kyeboards import (auto_posting, queue_selection_keyboard, cancel_button,
+from keyboards import (auto_posting, queue_selection_keyboard, cancel_button,
                        cancel_button_2, QueueSelection)
 
 from aiogram import F, html

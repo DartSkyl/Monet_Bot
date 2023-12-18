@@ -1,22 +1,15 @@
 from utils import admin_router, dict_queue
 from states import AutoPost
-from kyeboards import (auto_posting, queue_selection_keyboard, tr_set_keyboard, cancel_button,
+from keyboards import (auto_posting, queue_selection_keyboard, tr_set_keyboard, cancel_button,
                        cancel_button_2, QueueSelection, TriggerSettings)
 
 from aiogram import F, html
 from aiogram.types import Message, CallbackQuery
-from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
 
 week = {'mon': 'Понедельник', 'tue': 'Вторник', 'wed': 'Среда', 'thu': 'Четверг',
         'fri': 'Пятница', 'sat': 'Суббота', 'sun': 'Воскресенье', '*': 'Каждый день'}
-
-
-
-
-
-# ==========Настройка очереди публикаций ==========
 
 
 @admin_router.message(F.text == '⚙️ Настройка очереди публикаций')

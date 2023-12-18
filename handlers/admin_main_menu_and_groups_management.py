@@ -3,7 +3,7 @@ from utils import admin_router, add_queue, delete_queue, SubManag
 from states import GroupManagementStates as GMS
 
 # Импорт всех клавиатур администратора
-from kyeboards import (
+from keyboards import (
     main_admin_keyboard,
     group_management,
     sub_manag,

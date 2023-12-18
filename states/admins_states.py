@@ -15,9 +15,17 @@ class SubscriptionManagement(StatesGroup):
 
 
 class AutoPost(StatesGroup):
+    """Класс содержит стэйты для настройки очереди публикаций"""
     set_trigger_step_one = State()
     set_trigger_step_two = State()
     set_trigger_day = State()
     set_trigger_time = State()
     set_trigger_interval = State()
     check_queue = State()
+
+
+class AddingPost(StatesGroup):
+    """Класс содержит стэйты для добавления постов в очередь публикаций"""
+    step_one = State()
+    step_two = State()
+    step_three = State()

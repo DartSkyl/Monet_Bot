@@ -53,6 +53,9 @@ class AutoPosting:
 
     def __init__(self, chn_id: str) -> None:
         """Планировщик общий для всех. Отельными будут хранилища заданий и экзекуторы"""
+
+        # Часовой пояс!!!!!!
+
         self._scheduler = _general_scheduler
         self._scheduler.add_jobstore(jobstore='sqlalchemy', alias=f'{chn_id}', url=PG_URI, tablename=f'aps{chn_id}')
         self._executor = AsyncIOExecutor()
@@ -63,6 +66,9 @@ class AutoPosting:
         self.queue_info = None
 
     async def save_trigger_setting(self, trigger_data):
+        """Здесь настройки для триггера сохраняются в самом инстансе.
+        Так же сохраняет строку с информацией, что бы после перезапуска бота можно было
+        вывести актуальную информацию без перенастройки"""
         self._trigger_settings = trigger_data
         await db.save_queue_info(int(self._alias), self.queue_info)
 
@@ -146,15 +152,3 @@ class AutoPosting:
         # Если и в БД пусто, то вылезет ошибка. Проигнорируем её
         except IndexError:
             pass
-
-    async def add_post(self) -> None:
-        pass
-
-    async def remove_post(self) -> None:
-        pass
-
-    async def get_posts_list(self):
-        with open('file.txt', 'a') as file_in:
-            self._scheduler.print_jobs(jobstore=self._alias, out=file_in)
-        pr_jobs = self._scheduler.get_jobs(jobstore=self._alias)
-        print(pr_jobs)

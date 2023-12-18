@@ -3,7 +3,8 @@ from .Inline_keyboard.inline_for_admins import (
     add_sub_keyboard, AddSubForUser,
     add_sub_channel_keyboard, SubAddForChannel,
     QueueSelection, TriggerSettings,
-    queue_selection_keyboard, tr_set_keyboard)
+    queue_selection_keyboard, tr_set_keyboard,
+    AddingPublication, publication_type)
 from .reply_keyboard.admin_keyboard import (
     main_admin_keyboard,
     group_management,
@@ -34,6 +35,8 @@ __all__ = (
     "queue_selection_keyboard",
     "tr_set_keyboard",
     "cancel_button_2",
+    "AddingPublication",
+    "publication_type",
 
     # пользовательские клавиатуры
 
