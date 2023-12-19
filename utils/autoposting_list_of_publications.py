@@ -8,3 +8,7 @@ class ContentContainer:
         self._type = post_type
         self._file_id = file_id
         self._text = text
+
+    def __str__(self):
+        itself_str = f'\nID: {self._id}\nType: {self._type}\nFile ID: {self._file_id}\nText: {self._text}\n'
+        return itself_str

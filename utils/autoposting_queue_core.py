@@ -69,16 +69,23 @@ class AutoPosting:
         self. _publication_list = list()
 
     async def adding_publication_in_queue(self, content_type, file_id=None, text=None):
+        """Метод сохраняет публикацию в список публикаций через специальный контейнер"""
+        content_container = None  # Изменим это чуть ниже, в зависимости от условий
 
         if file_id and text:
             content_container = ContentContainer(post_type=content_type, file_id=file_id, text=text)
-            self._publication_list.append(content_container)
+            print('File and text')
         elif file_id:
             content_container = ContentContainer(post_type=content_type, file_id=file_id)
-            self._publication_list.append(content_container)
+            print('File only')
         elif text:
             content_container = ContentContainer(post_type=content_type, text=text)
-            self._publication_list.append(content_container)
+            print('Text only')
+
+        self._publication_list.append(content_container)
+
+    async def get_list_publication(self):
+        return self._publication_list
 
     async def save_trigger_setting(self, trigger_data):
         """Здесь настройки для триггера сохраняются в самом инстансе.

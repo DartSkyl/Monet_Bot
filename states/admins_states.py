@@ -28,5 +28,7 @@ class AddingPost(StatesGroup):
     """Класс содержит стэйты для добавления постов в очередь публикаций"""
     step_one = State()
     step_two = State()
+    step_adding_text = State()
+    step_adding_file = State()
     step_three = State()
     step_four = State()

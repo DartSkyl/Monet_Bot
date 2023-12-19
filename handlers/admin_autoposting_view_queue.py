@@ -22,3 +22,7 @@ async def check_queue(callback: CallbackQuery, callback_data: QueueSelection, st
     await callback.answer()
     msg_text = await dict_queue[callback_data.chnl_id].get_queue_info(callback_data.chnl_name)
     await callback.message.answer(text=msg_text)
+    for post in await dict_queue[callback_data.chnl_id].get_list_publication():
+        print(post)
+
+

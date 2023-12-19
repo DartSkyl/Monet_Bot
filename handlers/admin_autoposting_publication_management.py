@@ -25,7 +25,7 @@ async def adding_publication_choice_type(callback: CallbackQuery, callback_data:
     msg_text = (f'Выбрана очередь публикаций <i><b>{html.quote(callback_data.chnl_name)}</b></i>\n'
                 f'Выберете тип добавляемой публикации:')
     await callback.message.edit_text(text=msg_text, reply_markup=await publication_type())
-    await state.set_data({'channel_id': callback_data.chnl_id})
+    await state.set_data({'channel_id': callback_data.chnl_id, 'channel_name': callback_data.chnl_name})
     await state.set_state(AddingPost.step_two)
 
 
@@ -33,52 +33,87 @@ async def adding_publication_choice_type(callback: CallbackQuery, callback_data:
 async def adding_publication_input(callback: CallbackQuery, callback_data: AddingPublication, state: FSMContext):
     """Здесь происходит ввод содержимого будущей публикации"""
     await callback.answer()
-    if callback_data.publication_type == 'text':
+
+    if callback_data.publication_type in ['text',  'pic_text', 'video_text', 'file_text']:
         msg_text = 'Введите текст будущей публикации:'
+
         await callback.message.edit_text(text=msg_text)
         await state.update_data({'selected_type': callback_data.publication_type})
-        await state.set_state(AddingPost.step_three)
-    elif callback_data.publication_type in ['pic', 'video', 'video_note', 'file', 'pic_text', 'video_text', 'file_text']:
+        await state.set_state(AddingPost.step_adding_text)
+
+    elif callback_data.publication_type in ['pic', 'video', 'video_note', 'file']:
         msg_text = 'Загрузите файл будущей публикации:'
+
         await callback.message.edit_text(text=msg_text)
-        await state.update_data({'selected_type': callback_data.publication_type})
-        await state.set_state(AddingPost.step_three)
+        await state.update_data({
+            'selected_type': callback_data.publication_type,
+            'text_for_post': 'empty'  # Эта заглушка нужна для конструкции ниже
+        })
+        await state.set_state(AddingPost.step_adding_file)
+
     else:  # Если пользователь нажал "Отмена"
         await state.clear()
         await callback.message.answer(text='Действие отменено', reply_markup=auto_posting)
 
 
-@admin_router.message(AddingPost.step_three, F.text | F.photo | F.document | F.video | F.video_note)
-async def adding_publication_get_content(msg: Message, state: FSMContext):
-    """Здесь происходит загрузка контента пользователем"""
+@admin_router.message(AddingPost.step_adding_text, F.text)
+async def adding_publication_get_text(msg: Message, state: FSMContext):
+    """Здесь пользователь вводит текст для будущей публикации"""
     content_type = (await state.get_data())['selected_type']
+    if content_type == 'text':
+        channel_queue_id = (await state.get_data())['channel_id']
+        msg_text = f'Публикация добавлена в очередь <i><b>{html.quote((await state.get_data())["channel_name"])}</b></i>'
+        await dict_queue[channel_queue_id].adding_publication_in_queue(content_type=content_type, text=msg.text)
+        await msg.answer(text=msg_text, reply_markup=auto_posting)
+        await state.clear()
+    else:
+        await state.update_data({'text_for_post': msg.text})
+        await state.set_state(AddingPost.step_adding_file)
+        await msg.answer(text='Теперь скиньте файл', reply_markup=cancel_button)
+
+
+@admin_router.message(AddingPost.step_adding_file, F.photo | F.document | F.video | F.video_note)
+async def adding_publication_get_file(msg: Message, state: FSMContext):
+    """Здесь пользователь скидывает файл будущей публикаций"""
+    content_type = (await state.get_data())['selected_type']
+    channel_queue_id = (await state.get_data())['channel_id']
+    text_for_post = (await state.get_data())['text_for_post']
+    msg_text = f'Публикация добавлена в очередь <i><b>{html.quote((await state.get_data())["channel_name"])}</b></i>'
+    option_dict = {
+        'video': (msg.video, None),
+        'video_text': (msg.video, text_for_post),
+        'file': (msg.document, None),
+        'file_text': (msg.document, text_for_post),
+        'video_note': (msg.video_note, None),
+    }
+
+    async def adding_post():
+        await dict_queue[channel_queue_id].adding_publication_in_queue(
+            content_type=content_type,
+            file_id=option_dict[content_type][0].file_id,
+            text=option_dict[content_type][1]
+        )
+
+        await msg.answer(text=msg_text, reply_markup=auto_posting)
+        await state.clear()
 
     # Проверяем, соответствует ли тип сброшенного контента заявленному
 
-    if msg.text and content_type == 'text':
-        channel_queue_id = (await state.get_data())['channel_id']
-        dict_queue[channel_queue_id].adding_publication_in_queue(content_type, text=msg.text)
-        print('Text')
-
-    elif msg.photo and content_type in ['pic', 'pic_text']:
-        await state.update_data({'file_id': msg.photo[-1].file_id})
-        await state.set_state(AddingPost.step_four)
-        print('Photo')
+    if msg.photo and content_type in ['pic', 'pic_text']:
+        # Из-за того, что только msg.photo приходит в массиве, пришлось вынести эти ключи отдельно,
+        # а иначе, при других типах сбрасываемого контента выскакивает ошибка
+        option_dict['pic'] = (msg.photo[-1], None)
+        option_dict['pic_text'] = (msg.photo[-1], text_for_post)
+        await adding_post()
 
     elif msg.video and content_type in ['video', 'video_text']:
-        await state.update_data({'file_id': msg.video.file_id})
-        await state.set_state(AddingPost.step_four)
-        print('Video')
+        await adding_post()
 
     elif msg.document and content_type in ['file', 'file_text']:
-        await state.update_data({'file_id': msg.document.file_id})
-        await state.set_state(AddingPost.step_four)
-        print('File')
+        await adding_post()
 
     elif msg.video_note and content_type == 'video_note':
-        await state.update_data({'file_id': msg.video_note.file_id})
-        await state.set_state(AddingPost.step_four)
-        print('Video note')
+        await adding_post()
 
     else:
-        print('Несовпадение типов')
+        await msg.answer(text='Скинутый файл не соответствует заявленному', reply_markup=cancel_button)
