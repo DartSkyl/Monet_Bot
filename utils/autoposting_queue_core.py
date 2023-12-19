@@ -1,6 +1,7 @@
 import logging
 from config_data.config import PG_URI
 from loader import db
+from .autoposting_list_of_publications import ContentContainer
 
 from apscheduler.events import EVENT_JOB_MISSED, EVENT_JOB_ERROR
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -32,7 +33,7 @@ async def publish_post(channel_id: int):
 async def create_publish_queue():
     channels = await db.get_channel_list()
     for channel in channels:
-        dict_queue[channel['channel_id']] = AutoPosting(abs(channel['channel_id']))
+        dict_queue[channel['channel_id']] = AutoPosting(str(abs(channel['channel_id'])))
         await dict_queue[channel['channel_id']].upload_queue_info()
     _general_scheduler.start()
 
@@ -64,6 +65,20 @@ class AutoPosting:
         self._alias = f'{chn_id}'  # Свой псевдоним, что бы использовать его и не передавать каждый раз заново
         self._trigger_settings = None
         self.queue_info = None
+
+        self. _publication_list = list()
+
+    async def adding_publication_in_queue(self, content_type, file_id=None, text=None):
+
+        if file_id and text:
+            content_container = ContentContainer(post_type=content_type, file_id=file_id, text=text)
+            self._publication_list.append(content_container)
+        elif file_id:
+            content_container = ContentContainer(post_type=content_type, file_id=file_id)
+            self._publication_list.append(content_container)
+        elif text:
+            content_container = ContentContainer(post_type=content_type, text=text)
+            self._publication_list.append(content_container)
 
     async def save_trigger_setting(self, trigger_data):
         """Здесь настройки для триггера сохраняются в самом инстансе.

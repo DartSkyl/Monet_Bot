@@ -25,6 +25,7 @@ async def adding_publication_choice_type(callback: CallbackQuery, callback_data:
     msg_text = (f'Выбрана очередь публикаций <i><b>{html.quote(callback_data.chnl_name)}</b></i>\n'
                 f'Выберете тип добавляемой публикации:')
     await callback.message.edit_text(text=msg_text, reply_markup=await publication_type())
+    await state.set_data({'channel_id': callback_data.chnl_id})
     await state.set_state(AddingPost.step_two)
 
 
@@ -32,15 +33,15 @@ async def adding_publication_choice_type(callback: CallbackQuery, callback_data:
 async def adding_publication_input(callback: CallbackQuery, callback_data: AddingPublication, state: FSMContext):
     """Здесь происходит ввод содержимого будущей публикации"""
     await callback.answer()
-    if callback_data.publication_type in ['text', 'pic_text', 'video_text', 'file_text']:
+    if callback_data.publication_type == 'text':
         msg_text = 'Введите текст будущей публикации:'
         await callback.message.edit_text(text=msg_text)
-        await state.set_data({'selected_type': callback_data.publication_type})
+        await state.update_data({'selected_type': callback_data.publication_type})
         await state.set_state(AddingPost.step_three)
-    elif callback_data.publication_type in ['pic', 'video', 'video_note', 'file']:
+    elif callback_data.publication_type in ['pic', 'video', 'video_note', 'file', 'pic_text', 'video_text', 'file_text']:
         msg_text = 'Загрузите файл будущей публикации:'
         await callback.message.edit_text(text=msg_text)
-        await state.set_data({'selected_type': callback_data.publication_type})
+        await state.update_data({'selected_type': callback_data.publication_type})
         await state.set_state(AddingPost.step_three)
     else:  # Если пользователь нажал "Отмена"
         await state.clear()
@@ -51,18 +52,33 @@ async def adding_publication_input(callback: CallbackQuery, callback_data: Addin
 async def adding_publication_get_content(msg: Message, state: FSMContext):
     """Здесь происходит загрузка контента пользователем"""
     content_type = (await state.get_data())['selected_type']
-    # Проверяем, соответствует ли тип сброшенного контента заявленному
-    if msg.text and content_type == 'text':
 
+    # Проверяем, соответствует ли тип сброшенного контента заявленному
+
+    if msg.text and content_type == 'text':
+        channel_queue_id = (await state.get_data())['channel_id']
+        dict_queue[channel_queue_id].adding_publication_in_queue(content_type, text=msg.text)
         print('Text')
+
     elif msg.photo and content_type in ['pic', 'pic_text']:
+        await state.update_data({'file_id': msg.photo[-1].file_id})
+        await state.set_state(AddingPost.step_four)
         print('Photo')
+
     elif msg.video and content_type in ['video', 'video_text']:
+        await state.update_data({'file_id': msg.video.file_id})
+        await state.set_state(AddingPost.step_four)
         print('Video')
+
     elif msg.document and content_type in ['file', 'file_text']:
+        await state.update_data({'file_id': msg.document.file_id})
+        await state.set_state(AddingPost.step_four)
         print('File')
+
     elif msg.video_note and content_type == 'video_note':
+        await state.update_data({'file_id': msg.video_note.file_id})
+        await state.set_state(AddingPost.step_four)
         print('Video note')
+
     else:
         print('Несовпадение типов')
-

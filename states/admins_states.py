@@ -29,3 +29,4 @@ class AddingPost(StatesGroup):
     step_one = State()
     step_two = State()
     step_three = State()
+    step_four = State()
