@@ -61,15 +61,23 @@ async def adding_publication_get_text(msg: Message, state: FSMContext):
     """Здесь пользователь вводит текст для будущей публикации"""
     content_type = (await state.get_data())['selected_type']
     if content_type == 'text':
-        channel_queue_id = (await state.get_data())['channel_id']
-        msg_text = f'Публикация добавлена в очередь <i><b>{html.quote((await state.get_data())["channel_name"])}</b></i>'
-        await dict_queue[channel_queue_id].adding_publication_in_queue(content_type=content_type, text=msg.text)
-        await msg.answer(text=msg_text, reply_markup=auto_posting)
-        await state.clear()
+        if len(msg.text) <= 4096:
+            channel_queue_id = (await state.get_data())['channel_id']
+            msg_text = f'Публикация добавлена в очередь <i><b>{html.quote((await state.get_data())["channel_name"])}</b></i>'
+            await dict_queue[channel_queue_id].adding_publication_in_queue(content_type=content_type, text=msg.text)
+            await msg.answer(text=msg_text, reply_markup=auto_posting)
+            await state.clear()
+        else:
+            await msg.answer(text=f'Ограничение для одного сообщения 4096 символа (Вы ввели {len(msg.text)} символа)',
+                             reply_markup=cancel_button)
     else:
-        await state.update_data({'text_for_post': msg.text})
-        await state.set_state(AddingPost.step_adding_file)
-        await msg.answer(text='Теперь скиньте файл', reply_markup=cancel_button)
+        if len(msg.text) <= 1024:
+            await state.update_data({'text_for_post': msg.text})
+            await state.set_state(AddingPost.step_adding_file)
+            await msg.answer(text='Теперь скиньте файл', reply_markup=cancel_button)
+        else:
+            await msg.answer(text=f'Ограничение для описания файла 1024 символа (Вы ввели {len(msg.text)} символа)',
+                             reply_markup=cancel_button)
 
 
 @admin_router.message(AddingPost.step_adding_file, F.photo | F.document | F.video | F.video_note)

@@ -1,7 +1,7 @@
 import logging
 from config_data.config import PG_URI
-from loader import db
-from .autoposting_list_of_publications import ContentContainer
+from loader import db, bot
+from .autoposting_content_container import ContentContainer
 
 from apscheduler.events import EVENT_JOB_MISSED, EVENT_JOB_ERROR
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -27,10 +27,34 @@ _general_scheduler.add_listener(my_listener, EVENT_JOB_MISSED | EVENT_JOB_ERROR)
 
 
 async def publish_post(channel_id: int):
-    print(f'Works! Channel ID: {-channel_id}')
+    """Данная функция отвечает за публикацию постов в каналах, привязанных к боту.
+    На входе получает только ID канала"""
+    try:
+        queue = dict_queue[-channel_id]
+        publication = (await queue.get_list_publication())[0]
+        publication_type = publication.get_type()
+        publication_text = publication.get_text()
+        publication_file_id = publication.get_file_id()
+
+        if publication_type == 'text':
+            await bot.send_message(chat_id=-channel_id, text=publication_text)
+        elif publication_type in ['pic', 'pic_text']:
+            await bot.send_photo(chat_id=-channel_id, photo=publication_file_id, caption=publication_text)
+        elif publication_type in ['video', 'video_text']:
+            await bot.send_video(chat_id=-channel_id, video=publication_file_id, caption=publication_text)
+        elif publication_type in ['file', 'file_text']:
+            await bot.send_document(chat_id=-channel_id, document=publication_file_id, caption=publication_text)
+        elif publication_type == 'video_note':
+            await bot.send_video_note(chat_id=-channel_id, video_note=publication_file_id)
+        await queue.remove_executing_publication()
+
+        print(f'Works! Channel ID: {-channel_id}')
+    except IndexError:  # Выскочит если список публикаций пуст
+        print(f'List of publication is empty! Channel ID: {-channel_id}')
 
 
 async def create_publish_queue():
+    """Функция запускает очереди публикаций для уже имеющихся каналов при запуске бота"""
     channels = await db.get_channel_list()
     for channel in channels:
         dict_queue[channel['channel_id']] = AutoPosting(str(abs(channel['channel_id'])))
@@ -39,10 +63,12 @@ async def create_publish_queue():
 
 
 async def add_queue(chnl_id: int):
+    """Функция добавляет очередь публикаций для новых каналов"""
     dict_queue[chnl_id] = AutoPosting(str(abs(chnl_id)))
 
 
 async def delete_queue(chnl_id: int):
+    """Функция удаляет очередь публикаций и все что с ней связано при удалении канала"""
     dict_queue.pop(chnl_id)
     _general_scheduler.remove_jobstore(alias=f'{abs(chnl_id)}')
     _general_scheduler.remove_executor(alias=f'{abs(chnl_id)}')
@@ -74,13 +100,10 @@ class AutoPosting:
 
         if file_id and text:
             content_container = ContentContainer(post_type=content_type, file_id=file_id, text=text)
-            print('File and text')
         elif file_id:
             content_container = ContentContainer(post_type=content_type, file_id=file_id)
-            print('File only')
         elif text:
             content_container = ContentContainer(post_type=content_type, text=text)
-            print('Text only')
 
         self._publication_list.append(content_container)
 
@@ -102,6 +125,7 @@ class AutoPosting:
 
         if self.queue_info:
             queue_info_str = self.queue_info.split('_')
+
             # Если в списке queue_info_str два элемента (дни и время) значит это настройки для триггера класса cron
 
             if len(queue_info_str) > 1:
@@ -151,8 +175,6 @@ class AutoPosting:
                                         jobstore=self._alias, executor=self._alias, id=job_id, max_instances=1,
                                         replace_existing=True)
 
-            self._scheduler.print_jobs(jobstore=self._alias)
-
         # Если self.trigger_settings является строкой, значит триггер будет interval
         elif isinstance(self._trigger_settings, str):
             time_execute = self._trigger_settings.split(':')
@@ -161,8 +183,6 @@ class AutoPosting:
                                     hours=int(time_execute[0]), minutes=int(time_execute[1]),
                                     jobstore=self._alias, executor=self._alias, id=job_id, max_instances=1,
                                     replace_existing=True)
-
-            self._scheduler.print_jobs(jobstore=self._alias)
 
         else:
             print('TriggerError')
@@ -174,3 +194,8 @@ class AutoPosting:
         # Если и в БД пусто, то вылезет ошибка. Проигнорируем её
         except IndexError:
             pass
+
+    async def remove_executing_publication(self):
+        """Метод удаляет из списка публикаций опубликованную запись.
+        Так как публикуемая запись всегда имеет индекс 0 то ее и будем удалять"""
+        self._publication_list.pop(0)
