@@ -1,6 +1,6 @@
 from loader import subscription_dict, channels_dict, bot, db
 from aiogram import html
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters.callback_data import CallbackData
 
 
@@ -121,7 +121,7 @@ async def tr_set_keyboard(step):
         for day_key, day_value in day_of_week.items():
             trigger_keyboard.button(text=day_key, callback_data=TriggerSettings(day_of_the_week=day_value))
         trigger_keyboard.button(text='Отмена', callback_data=TriggerSettings(next_step='cancel'))
-        trigger_keyboard.button(text='Дальше >>', callback_data=TriggerSettings(next_step='next_step'))
+        trigger_keyboard.button(text='Дальше ➡️', callback_data=TriggerSettings(next_step='next_step'))
         trigger_keyboard.adjust(2)
         return trigger_keyboard.as_markup(resize_keyboard=True)
 
@@ -138,3 +138,20 @@ async def publication_type():
 
     post_type_keyboard.adjust(2)
     return post_type_keyboard.as_markup(resize_keyboard=True)
+
+
+async def view_publications_list(page_dict):
+    """Клавиатура для демонстрации публикаций из списка публикаций"""
+    buttons = [
+        [
+            InlineKeyboardButton(text='⬅️ Назад', callback_data='back_page'),
+            InlineKeyboardButton(text=f'{page_dict["page"]}/{page_dict["count"]}', callback_data='empty'),
+            InlineKeyboardButton(text='Вперед ➡️', callback_data='next_page')
+        ],
+        [
+            InlineKeyboardButton(text='❌ Удалить публикацию', callback_data='delete')
+        ]
+    ]
+    demonstration_keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return demonstration_keyboard
+

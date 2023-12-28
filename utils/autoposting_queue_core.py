@@ -1,4 +1,5 @@
 import logging
+import time
 from config_data.config import PG_URI
 from loader import db, bot
 from .autoposting_content_container import ContentContainer
@@ -33,7 +34,7 @@ async def publish_post(channel_id: int):
         queue = dict_queue[-channel_id]
         publication = (await queue.get_list_publication())[0]
         publication_type = publication.get_type()
-        publication_text = publication.get_text()
+        publication_text = html.quote(publication.get_text())  # Иначе могут быть проблемы с парсингом сообщений
         publication_file_id = publication.get_file_id()
 
         if publication_type == 'text':
@@ -59,12 +60,15 @@ async def create_publish_queue():
     for channel in channels:
         dict_queue[channel['channel_id']] = AutoPosting(str(abs(channel['channel_id'])))
         await dict_queue[channel['channel_id']].upload_queue_info()
+        await db.create_publication_table(channel['channel_id'])
+        await dict_queue[channel['channel_id']].upload_list_of_publication()
     _general_scheduler.start()
 
 
 async def add_queue(chnl_id: int):
     """Функция добавляет очередь публикаций для новых каналов"""
     dict_queue[chnl_id] = AutoPosting(str(abs(chnl_id)))
+    await db.create_publication_table(chnl_id)
 
 
 async def delete_queue(chnl_id: int):
@@ -73,6 +77,7 @@ async def delete_queue(chnl_id: int):
     _general_scheduler.remove_jobstore(alias=f'{abs(chnl_id)}')
     _general_scheduler.remove_executor(alias=f'{abs(chnl_id)}')
     await db.delete_jobstore_table(channel_id=chnl_id)
+    await db.delete_publication_table(channel_id=chnl_id)
 
 
 class AutoPosting:
@@ -97,17 +102,20 @@ class AutoPosting:
     async def adding_publication_in_queue(self, content_type, file_id=None, text=None):
         """Метод сохраняет публикацию в список публикаций через специальный контейнер"""
         content_container = None  # Изменим это чуть ниже, в зависимости от условий
-
+        container_id = str(int(time.time()))  # В качестве ID будут секунды в виде строки
         if file_id and text:
-            content_container = ContentContainer(post_type=content_type, file_id=file_id, text=text)
+            content_container = ContentContainer(container_id=container_id, post_type=content_type, file_id=file_id, text=text)
         elif file_id:
-            content_container = ContentContainer(post_type=content_type, file_id=file_id)
+            content_container = ContentContainer(container_id=container_id, post_type=content_type, file_id=file_id)
         elif text:
-            content_container = ContentContainer(post_type=content_type, text=text)
+            content_container = ContentContainer(container_id=container_id, post_type=content_type, text=text)
 
         self._publication_list.append(content_container)
+        await db.save_publication(channel_id=int(self._alias), container_id=container_id,
+                                  content_type=content_type, file_id=file_id, publication_text=text)
 
     async def get_list_publication(self):
+        """Возвращает список публикаций"""
         return self._publication_list
 
     async def save_trigger_setting(self, trigger_data):
@@ -195,7 +203,24 @@ class AutoPosting:
         except IndexError:
             pass
 
+    async def upload_list_of_publication(self):
+        """Здесь выгружаются публикации из БД в список публикаций"""
+        list_from_db = await db.get_list_of_publication(channel_id=int(self._alias))
+        for publication in list_from_db:
+            content_container = ContentContainer(container_id=publication['container_id'],
+                                                 post_type=publication['content_type'],
+                                                 file_id=publication['file_id'],
+                                                 # Что бы не передавать в качестве текста 'None', так как
+                                                 # из БД будет загружаться именно такая строка,
+                                                 # если текст не передавался
+                                                 text=(publication['publication_text'] if publication['publication_text'] != 'None' else None))
+
+            self._publication_list.append(content_container)
+
     async def remove_executing_publication(self):
         """Метод удаляет из списка публикаций опубликованную запись.
         Так как публикуемая запись всегда имеет индекс 0 то ее и будем удалять"""
-        self._publication_list.pop(0)
+        # Удаляем из самого списка
+        removing_container = self._publication_list.pop(0)
+        # И удаляем из БД
+        await db.remove_executed_publication(channel_id=int(self._alias), container_id=removing_container.get_id())
