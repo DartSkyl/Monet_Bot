@@ -1,3 +1,4 @@
+import asyncio
 from utils import admin_router, dict_queue
 from states import AddingPost
 from keyboards import (cancel_button, cancel_button_2, auto_posting,
@@ -61,15 +62,22 @@ async def adding_publication_get_text(msg: Message, state: FSMContext):
     """Здесь пользователь вводит текст для будущей публикации"""
     content_type = (await state.get_data())['selected_type']
     if content_type == 'text':
-        if len(msg.text) <= 4096:
+        if len(msg.text) <= 3000:
             channel_queue_id = (await state.get_data())['channel_id']
             msg_text = f'Публикация добавлена в очередь <i><b>{html.quote((await state.get_data())["channel_name"])}</b></i>'
             await dict_queue[channel_queue_id].adding_publication_in_queue(content_type=content_type, text=msg.text)
             await msg.answer(text=msg_text, reply_markup=auto_posting)
             await state.clear()
         else:
-            await msg.answer(text=f'Ограничение для одного сообщения 4096 символа (Вы ввели {len(msg.text)} символа)',
+            await state.set_state(AddingPost.false_state)  # Это нужно для того, что бы когда телеграмм разобьет
+            # сообщение на две части не пропустить второе
+
+            await msg.answer(text=f'Ограничение для одного сообщения 3000 символов (Вы ввели {len(msg.text)} символа)',
                              reply_markup=cancel_button)
+
+            await asyncio.sleep(1)
+            await state.set_state(AddingPost.step_adding_text)  # И сразу установим стэйт обратно,
+            # что бы пользователь мог повторить ввод текста для публикации
     else:
         if len(msg.text) <= 1024:
             await state.update_data({'text_for_post': msg.text})

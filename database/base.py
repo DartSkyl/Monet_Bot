@@ -193,7 +193,7 @@ class BotBase:
                                       f"(container_id, content_type, file_id, publication_text)"
                                       f"VALUES ('{container_id}', '{content_type}', '{file_id}', '{publication_text}');")
 
-    async def remove_executed_publication(self, channel_id: int, container_id: str) -> None:
+    async def remove_publication_from_db(self, channel_id: int, container_id: str) -> None:
         """Метод удаляет уже опубликованную публикацию"""
         await self.connection.execute(f"DELETE FROM public.list_of_publication_{abs(channel_id)} "
                                       f"WHERE container_id = '{container_id}'")

@@ -1,8 +1,8 @@
-import time
 from aiogram import html
 
 
 types_dict = {
+        'text': 'Текст',
         'pic': 'Картинка',
         'pic_text': 'Картинка + Текст',
         'video': 'Видео',
@@ -38,9 +38,8 @@ class ContentContainer:
         return self._text
 
     def get_info(self):
-        info_string = 'Тип публикации: <i><b>{post_type}</b></i>\nТекст публикации: {text}\n'.format(
+        info_string = '<i>Тип публикации:</i> <b>{post_type}</b>\n\n<i>Текст публикации:</i>\n{text}'.format(
             post_type=types_dict[self._type],
             text=(html.quote(self._text) if self._text else '<i><b>Отсутствует</b></i>')
         )
         return info_string
-

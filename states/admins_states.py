@@ -33,3 +33,4 @@ class AddingPost(StatesGroup):
     step_adding_file = State()
     step_three = State()
     step_four = State()
+    false_state = State()

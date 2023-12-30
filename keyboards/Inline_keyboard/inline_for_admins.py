@@ -98,8 +98,7 @@ async def queue_selection_keyboard():
         queues_keyboard.button(text=channel['channel_name'],
                                callback_data=QueueSelection(
                                    chnl_id=channel['channel_id'],
-                                   chnl_name=channel['channel_name'])
-                               )
+                                   chnl_name=channel['channel_name']))
     queues_keyboard.adjust(1)
     return queues_keyboard.as_markup(resize_keyboard=True)
 
@@ -144,14 +143,31 @@ async def view_publications_list(page_dict):
     """Клавиатура для демонстрации публикаций из списка публикаций"""
     buttons = [
         [
+            InlineKeyboardButton(text='🔎 Посмотреть медиафайл', callback_data='get_file')
+        ],
+        [
             InlineKeyboardButton(text='⬅️ Назад', callback_data='back_page'),
             InlineKeyboardButton(text=f'{page_dict["page"]}/{page_dict["count"]}', callback_data='empty'),
             InlineKeyboardButton(text='Вперед ➡️', callback_data='next_page')
         ],
         [
-            InlineKeyboardButton(text='❌ Удалить публикацию', callback_data='delete')
+            InlineKeyboardButton(text='❌ Удалить публикацию', callback_data='start_delete')
         ]
     ]
     demonstration_keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return demonstration_keyboard
 
+
+async def return_to_queue():
+    """Кнопка для возврата из просмотра медиафайла обратно к очереди публикаций"""
+    button = [[InlineKeyboardButton(text='Вернуться', callback_data='return')]]
+    return InlineKeyboardMarkup(inline_keyboard=button)
+
+
+async def deletion_confirmation():
+    """Клавиатура для подтверждения удаления публикации"""
+    buttons = [[
+        InlineKeyboardButton(text='❌ Удалить', callback_data='delete'),
+        InlineKeyboardButton(text='🚫 Отмена', callback_data='return')
+    ]]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

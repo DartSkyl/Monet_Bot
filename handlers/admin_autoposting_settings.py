@@ -1,7 +1,8 @@
+from loader import db
 from utils import admin_router, dict_queue
 from states import AutoPost
 from keyboards import (auto_posting, queue_selection_keyboard, tr_set_keyboard, cancel_button,
-                       cancel_button_2, QueueSelection, TriggerSettings)
+                       cancel_button_2, QueueSelection, TriggerSettings, SwitchQueue, switch_keyboard)
 
 from aiogram import F, html
 from aiogram.types import Message, CallbackQuery
@@ -176,4 +177,3 @@ async def trigger_setting_error_input(msg: Message):
 @admin_router.message(AutoPost.set_trigger_interval)
 async def trigger_setting_error_input(msg: Message):
     await msg.answer(text='Неверный ввод!')
-

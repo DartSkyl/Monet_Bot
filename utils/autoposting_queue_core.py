@@ -34,7 +34,8 @@ async def publish_post(channel_id: int):
         queue = dict_queue[-channel_id]
         publication = (await queue.get_list_publication())[0]
         publication_type = publication.get_type()
-        publication_text = html.quote(publication.get_text())  # Иначе могут быть проблемы с парсингом сообщений
+        # Иначе могут быть проблемы с парсингом сообщений:
+        publication_text = (html.quote(publication.get_text()) if publication.get_text() else None)
         publication_file_id = publication.get_file_id()
 
         if publication_type == 'text':
@@ -47,11 +48,11 @@ async def publish_post(channel_id: int):
             await bot.send_document(chat_id=-channel_id, document=publication_file_id, caption=publication_text)
         elif publication_type == 'video_note':
             await bot.send_video_note(chat_id=-channel_id, video_note=publication_file_id)
-        await queue.remove_executing_publication()
+        await queue.remove_publication(removing_index=0)
 
-        print(f'Works! Channel ID: {-channel_id}')
     except IndexError:  # Выскочит если список публикаций пуст
         print(f'List of publication is empty! Channel ID: {-channel_id}')
+
 
 
 async def create_publish_queue():
@@ -114,6 +115,7 @@ class AutoPosting:
         await db.save_publication(channel_id=int(self._alias), container_id=container_id,
                                   content_type=content_type, file_id=file_id, publication_text=text)
 
+
     async def get_list_publication(self):
         """Возвращает список публикаций"""
         return self._publication_list
@@ -155,7 +157,7 @@ class AutoPosting:
             # В ином случае это триггер interval (только время)
             else:
                 ready_string = (f'Очередь публикаций канала <i><b>{html.quote(chnl_name)}</b></i>\n\n'
-                                f'Основной принцип работы: <b>Определенным интервалом</b>'
+                                f'Основной принцип работы: <b>Определенным интервалом</b>\n'
                                 f'Установленный интервал: <b>{queue_info_str[0]}</b>')
 
                 return ready_string
@@ -209,18 +211,23 @@ class AutoPosting:
         for publication in list_from_db:
             content_container = ContentContainer(container_id=publication['container_id'],
                                                  post_type=publication['content_type'],
-                                                 file_id=publication['file_id'],
-                                                 # Что бы не передавать в качестве текста 'None', так как
+                                                 file_id=(publication['file_id']
+                                                          if publication['file_id'] != 'None' else None),
+                                                 # Что бы не передавать 'None' в качестве строки, так как
                                                  # из БД будет загружаться именно такая строка,
-                                                 # если текст не передавался
-                                                 text=(publication['publication_text'] if publication['publication_text'] != 'None' else None))
+                                                 # если текст или ID файла не передавались
+                                                 text=(publication['publication_text']
+                                                       if publication['publication_text'] != 'None' else None))
 
             self._publication_list.append(content_container)
 
-    async def remove_executing_publication(self):
+    async def remove_publication(self, removing_index):
         """Метод удаляет из списка публикаций опубликованную запись.
         Так как публикуемая запись всегда имеет индекс 0 то ее и будем удалять"""
-        # Удаляем из самого списка
-        removing_container = self._publication_list.pop(0)
-        # И удаляем из БД
-        await db.remove_executed_publication(channel_id=int(self._alias), container_id=removing_container.get_id())
+        try:
+            # Удаляем из самого списка
+            removing_container = self._publication_list.pop(removing_index)
+            # И удаляем из БД
+            await db.remove_publication_from_db(channel_id=int(self._alias), container_id=removing_container.get_id())
+        except IndexError:  # На случай исключительного "маразма"
+            pass
