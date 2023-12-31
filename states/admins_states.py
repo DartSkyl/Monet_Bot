@@ -23,6 +23,7 @@ class AutoPost(StatesGroup):
     set_trigger_interval = State()
     check_queue = State()
     view_publications = State()
+    queue_switch = State()
 
 
 class AddingPost(StatesGroup):

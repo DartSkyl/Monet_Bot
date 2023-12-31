@@ -44,6 +44,12 @@ class AddingPublication(CallbackData, prefix='add_post'):
     publication_type: str
 
 
+class SwitchQueue(CallbackData, prefix='switch'):
+    """Класс вкл/выкл очередей публикаций"""
+    channel_id: int
+    channel_name: str
+
+
 # ========== Сами клавиатуры ==========
 
 
@@ -171,3 +177,16 @@ async def deletion_confirmation():
         InlineKeyboardButton(text='🚫 Отмена', callback_data='return')
     ]]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def switch_keyboard():
+    """Клавиатура для вкл/выкл очередей публикаций"""
+    queues_keyboard = InlineKeyboardBuilder()
+    channels_list = await db.get_channel_list()
+    for channel in channels_list:
+        queues_keyboard.button(text=f"Переключить {channel['channel_name']}",
+                               callback_data=SwitchQueue(
+                                   channel_id=channel['channel_id'],
+                                   channel_name=channel['channel_name']))
+    queues_keyboard.adjust(1)
+    return queues_keyboard.as_markup(resize_keyboard=True)

@@ -177,3 +177,30 @@ async def trigger_setting_error_input(msg: Message):
 @admin_router.message(AutoPost.set_trigger_interval)
 async def trigger_setting_error_input(msg: Message):
     await msg.answer(text='Неверный ввод!')
+
+
+@admin_router.message(F.text == '⏯️ Включить / Выключить очередь публикаций')
+async def start_or_pause_queue(msg: Message, state: FSMContext):
+    """Здесь запускается переключение очередей публикаций в активное или неактивное состояние"""
+    msg_text = 'Состояние очередей публикаций:\n\n'
+    channels_list = await db.get_channel_list()
+    for channel in channels_list:
+        msg_text += (f'<b>{html.quote(channel["channel_name"])}:</b>   '
+                     f'{await dict_queue[channel["channel_id"]].get_queue_status()}\n')
+
+    await msg.answer(text=msg_text, reply_markup=await switch_keyboard())
+    await state.set_state(AutoPost.queue_switch)
+
+
+@admin_router.callback_query(AutoPost.queue_switch, SwitchQueue.filter())
+async def switching_queue(callback: CallbackQuery, callback_data: SwitchQueue, state: FSMContext):
+    """Здесь очередь публикации переключается"""
+    await dict_queue[callback_data.channel_id].switch_for_queue()  # Переключаем
+
+    msg_text = 'Состояние очередей публикаций:\n\n'
+    channels_list = await db.get_channel_list()
+    for channel in channels_list:
+        msg_text += (f'<b>{html.quote(channel["channel_name"])}:</b>   '
+                     f'{await dict_queue[channel["channel_id"]].get_queue_status()}\n')
+    await callback.message.edit_text(text=msg_text, reply_markup=await switch_keyboard())
+

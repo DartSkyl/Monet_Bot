@@ -6,7 +6,7 @@ from .Inline_keyboard.inline_for_admins import (
     queue_selection_keyboard, tr_set_keyboard,
     AddingPublication, publication_type,
     view_publications_list, return_to_queue,
-    deletion_confirmation)
+    deletion_confirmation, SwitchQueue, switch_keyboard)
 from .reply_keyboard.admin_keyboard import (
     main_admin_keyboard,
     group_management,
@@ -44,6 +44,8 @@ __all__ = (
     "return_to_queue",
     "deletion_confirmation",
     "returning_button",
+    "SwitchQueue",
+    "switch_keyboard",
 
     # пользовательские клавиатуры
 
