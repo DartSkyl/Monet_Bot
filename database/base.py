@@ -164,3 +164,36 @@ class BotBase:
         """Метод удаляет таблицу с заданиями планировщика при удалении канала, а так же запись из таблицы queue_info"""
         await self.connection.execute(f'DROP TABLE public.aps{abs(channel_id)};'
                                       f'DELETE FROM public.queue_info WHERE channel_id = {abs(channel_id)}')
+
+    async def create_publication_table(self, channel_id: int) -> None:
+        """Метод создает таблицу с резервной копией информации для каждой публикации
+        в очереди публикаций на случай сбоя"""
+        await self.connection.execute(f"CREATE TABLE IF NOT EXISTS list_of_publication_{abs(channel_id)}"
+                                      f"(container_id VARCHAR(10) PRIMARY KEY,"
+                                      f"content_type VARCHAR(10),"
+                                      f"file_id VARCHAR(100),"
+                                      f"publication_text TEXT)")
+
+    async def delete_publication_table(self, channel_id: int) -> None:
+        """Метод удаляет таблицу с резервной копией списка публикаций при удалении канала"""
+        await self.connection.execute(f"DROP TABLE public.list_of_publication_{abs(channel_id)}")
+
+    async def get_list_of_publication(self, channel_id: int) -> list:
+        """Метод возвращает список со всеми сохраненными публикациями"""
+        result = await self.connection.fetch(f"SELECT * FROM public.list_of_publication_{abs(channel_id)}")
+        return result
+
+    async def save_publication(self, channel_id: int,
+                               container_id: str,
+                               content_type: str,
+                               file_id: str,
+                               publication_text: str) -> None:
+        """Метод сохраняет публикацию в соответствующую таблицу"""
+        await self.connection.execute(f"INSERT INTO public.list_of_publication_{abs(channel_id)} "
+                                      f"(container_id, content_type, file_id, publication_text)"
+                                      f"VALUES ('{container_id}', '{content_type}', '{file_id}', '{publication_text}');")
+
+    async def remove_publication_from_db(self, channel_id: int, container_id: str) -> None:
+        """Метод удаляет уже опубликованную публикацию"""
+        await self.connection.execute(f"DELETE FROM public.list_of_publication_{abs(channel_id)} "
+                                      f"WHERE container_id = '{container_id}'")

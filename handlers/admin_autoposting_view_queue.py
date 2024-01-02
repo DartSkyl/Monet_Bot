@@ -1,7 +1,8 @@
 from utils import admin_router, dict_queue
 from states import AutoPost
 from keyboards import (auto_posting, queue_selection_keyboard, cancel_button,
-                       cancel_button_2, QueueSelection)
+                       cancel_button_2, QueueSelection, view_publications_list, return_to_queue,
+                       deletion_confirmation, returning_button)
 
 from aiogram import F, html
 from aiogram.types import Message, CallbackQuery
@@ -18,11 +19,157 @@ async def publish_queue(message: Message, state: FSMContext):
 
 
 @admin_router.callback_query(QueueSelection.filter(), AutoPost.check_queue)
-async def check_queue(callback: CallbackQuery, callback_data: QueueSelection, state: FSMContext):
+async def start_demonstration_queue(callback: CallbackQuery, callback_data: QueueSelection, state: FSMContext):
+    """Здесь стартует показ очереди публикаций"""
     await callback.answer()
     msg_text = await dict_queue[callback_data.chnl_id].get_queue_info(callback_data.chnl_name)
-    await callback.message.answer(text=msg_text)
-    for post in await dict_queue[callback_data.chnl_id].get_list_publication():
-        print(post)
+    await callback.message.answer(text=msg_text, reply_markup=returning_button)
+    await callback.message.delete()
+    try:
+        list_of_publication = await dict_queue[callback_data.chnl_id].get_list_publication()
+        first_publication = list_of_publication[0]
+        publication_info = first_publication.get_info()
+        # Сначала зададим необходимые значения, что бы ориентироваться по списку публикаций
+        await state.set_data({'count': len(list_of_publication), 'page': 1})
+        # И сразу же сделаем из них словарь, что бы передать их для создания клавиатуры
+        page = await state.get_data()
+
+        await callback.message.answer(text=publication_info, reply_markup=await view_publications_list(page))
+
+        await state.set_state(AutoPost.view_publications)
+        await state.update_data({'channel_id': callback_data.chnl_id, 'publication': first_publication})
+
+    except IndexError:  # Если список публикаций пуст
+        await callback.message.answer(text='<b>Очередь публикаций пуста!</b>', reply_markup=auto_posting)
+        await state.clear()
 
 
+@admin_router.callback_query(AutoPost.view_publications, F.data.in_(['next_page', 'back_page']))
+async def queue_demonstration(callback: CallbackQuery, state: FSMContext):
+    """Здесь основная функция показа очереди публикаций"""
+    channel_id = (await state.get_data())['channel_id']
+
+    # Здесь так же есть еще несколько ключей, но нам это не помешает, будем использовать только 'page' и 'count'
+    page = await state.get_data()
+    display_publication_index = page['page'] - 1  # Очевидно, так как нумерация страниц начинается с 1, а индекса с 0
+    next_publication = None  # Дальше здесь будет контейнер с публикацией
+    list_of_publication = await dict_queue[channel_id].get_list_publication()
+    page['count'] = len(list_of_publication)  # На случай, если во время просмотра что-нибудь опубликовалось
+    try:
+        if callback.data == 'next_page':
+            if display_publication_index < (page['count'] - 1):
+                next_publication = list_of_publication[display_publication_index + 1]
+                page['page'] += 1  # И сразу меняем номер страницы
+            else:
+                # Если дойдя до конца пользователь листает вперед,
+                # то переключаем на первую публикацию
+                next_publication = list_of_publication[0]
+                page['page'] = 1
+
+        elif callback.data == 'back_page':
+            if display_publication_index > 0:
+                next_publication = list_of_publication[display_publication_index - 1]
+                page['page'] -= 1  # И сразу меняем номер страницы
+            else:
+                # Если с самого начала листают назад,
+                # то переключаемся на последнюю публикацию в списке
+                next_publication = list_of_publication[page['count'] - 1]
+                page['page'] = page['count']
+    except IndexError:  # Если в очереди осталась одна запись и во время просмотра она опубликовалась,
+        # а пользователь решил полистать. Да маразм! И что?
+        await callback.message.delete()
+        await callback.message.answer(text='<b>Очередь публикаций пуста!</b>', reply_markup=auto_posting)
+        await state.clear()
+
+    try:
+        await callback.message.edit_text(text=next_publication.get_info(),
+                                         reply_markup=await view_publications_list(page))
+
+        await state.update_data({  # Сохраним изменения для дальнейшего использования
+            'page': page['page'],
+            'publication': next_publication  # Нужно для демонстрации медиафайла
+        })
+
+    except TelegramBadRequest:
+        # Выскочит, если в списке публикаций только одна запись и пользователь будет листать. Заигнорим
+        pass
+    except AttributeError:
+        # Выскочит, если "маразм" сработает
+        pass
+
+
+@admin_router.callback_query(AutoPost.view_publications, F.data == 'get_file')
+async def show_mediafile(callback: CallbackQuery, state: FSMContext):
+    """Здесь происходит демонстрация медиафайла публикации, если таковой имеется"""
+    publication = (await state.get_data())['publication']
+
+    publication_file, publication_type = publication.get_file_id(), publication.get_type()
+
+    if publication_file:
+        await callback.message.delete()
+        if publication_type in ['pic', 'pic_text']:
+            await callback.message.answer_photo(photo=publication_file, reply_markup=await return_to_queue())
+        elif publication_type in ['video', 'video_text']:
+            await callback.message.answer_video(video=publication_file, reply_markup=await return_to_queue())
+        elif publication_type in ['file', 'file_text']:
+            await callback.message.answer_document(document=publication_file, reply_markup=await return_to_queue())
+        elif publication_type == 'video_note':
+            await callback.message.answer_video_note(video_note=publication_file, reply_markup=await return_to_queue())
+    else:
+        await callback.answer(text='Публикация не содержит медиафайла!')
+
+
+@admin_router.callback_query(AutoPost.view_publications, F.data == 'return')
+async def return_to_view_queue(callback: CallbackQuery, state: FSMContext):
+    """Здесь мы возвращаемся из просмотра медиафайла или при отмене удаления публикации к просмотру очереди"""
+    await callback.message.delete()
+    publication = (await state.get_data())['publication']
+    page = await state.get_data()
+    await callback.message.answer(text=publication.get_info(), reply_markup=await view_publications_list(page))
+
+
+@admin_router.callback_query(AutoPost.view_publications, F.data == 'start_delete')
+async def start_deleting_publication(callback: CallbackQuery, state: FSMContext):
+    """Здесь пользователь подтверждает или отменяет удаление публикации"""
+    await callback.message.delete()
+    await callback.message.answer(text='‼️Подтвердите удаления публикации‼️',
+                                  reply_markup=await deletion_confirmation())
+
+
+@admin_router.callback_query(AutoPost.view_publications, F.data == 'delete')
+async def delete_publication(callback: CallbackQuery, state: FSMContext):
+    """Здесь происходит удаление публикации из очереди публикаций"""
+    # await callback.message.delete()
+
+    publication_info = await state.get_data()  # Для удобства скинем все в один словарь
+
+    # Индекс удаляемой публикации это page['page'] - 1
+    post_to_be_deleted_index = publication_info['page'] - 1
+    queue = dict_queue[publication_info['channel_id']]
+    await queue.remove_publication(post_to_be_deleted_index)
+
+    # Теперь изменим значения page['page'] и page['count']
+    if publication_info['page'] == publication_info['count']:
+        publication_info['page'] -= 1
+    publication_info['count'] -= 1
+    await state.update_data({
+        'page': publication_info['page'],
+        'count': publication_info['count']
+    })
+
+    # И обновим показ очереди публикаций
+    if publication_info['count'] > 0:
+        publication = (await queue.get_list_publication())[publication_info['page'] - 1]
+        await callback.message.edit_text(text=publication.get_info(),
+                                         reply_markup=await view_publications_list(publication_info))
+    else:
+        await callback.message.delete()
+        await callback.message.answer(text='<b>Очередь публикаций пуста!</b>', reply_markup=auto_posting)
+        await state.clear()
+
+
+@admin_router.message(F.text == '⏪ Вернуться')
+async def return_to_autoposting_menu(msg: Message, state: FSMContext):
+    """Здесь пользователь возвращается в меню автопостинга"""
+    await state.clear()
+    await msg.answer(text='Просмотр публикаций прекращен', reply_markup=auto_posting)

@@ -22,6 +22,8 @@ class AutoPost(StatesGroup):
     set_trigger_time = State()
     set_trigger_interval = State()
     check_queue = State()
+    view_publications = State()
+    queue_switch = State()
 
 
 class AddingPost(StatesGroup):
@@ -32,3 +34,4 @@ class AddingPost(StatesGroup):
     step_adding_file = State()
     step_three = State()
     step_four = State()
+    false_state = State()

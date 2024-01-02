@@ -1,6 +1,6 @@
 from loader import subscription_dict, channels_dict, bot, db
 from aiogram import html
-from aiogram.utils.keyboard import InlineKeyboardBuilder
+from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters.callback_data import CallbackData
 
 
@@ -42,6 +42,12 @@ class TriggerSettings(CallbackData, prefix='trigger'):
 class AddingPublication(CallbackData, prefix='add_post'):
     """Класс коллбэков для добавления публикаций"""
     publication_type: str
+
+
+class SwitchQueue(CallbackData, prefix='switch'):
+    """Класс вкл/выкл очередей публикаций"""
+    channel_id: int
+    channel_name: str
 
 
 # ========== Сами клавиатуры ==========
@@ -98,8 +104,7 @@ async def queue_selection_keyboard():
         queues_keyboard.button(text=channel['channel_name'],
                                callback_data=QueueSelection(
                                    chnl_id=channel['channel_id'],
-                                   chnl_name=channel['channel_name'])
-                               )
+                                   chnl_name=channel['channel_name']))
     queues_keyboard.adjust(1)
     return queues_keyboard.as_markup(resize_keyboard=True)
 
@@ -121,7 +126,7 @@ async def tr_set_keyboard(step):
         for day_key, day_value in day_of_week.items():
             trigger_keyboard.button(text=day_key, callback_data=TriggerSettings(day_of_the_week=day_value))
         trigger_keyboard.button(text='Отмена', callback_data=TriggerSettings(next_step='cancel'))
-        trigger_keyboard.button(text='Дальше >>', callback_data=TriggerSettings(next_step='next_step'))
+        trigger_keyboard.button(text='Дальше ➡️', callback_data=TriggerSettings(next_step='next_step'))
         trigger_keyboard.adjust(2)
         return trigger_keyboard.as_markup(resize_keyboard=True)
 
@@ -138,3 +143,50 @@ async def publication_type():
 
     post_type_keyboard.adjust(2)
     return post_type_keyboard.as_markup(resize_keyboard=True)
+
+
+async def view_publications_list(page_dict):
+    """Клавиатура для демонстрации публикаций из списка публикаций"""
+    buttons = [
+        [
+            InlineKeyboardButton(text='🔎 Посмотреть медиафайл', callback_data='get_file')
+        ],
+        [
+            InlineKeyboardButton(text='⬅️ Назад', callback_data='back_page'),
+            InlineKeyboardButton(text=f'{page_dict["page"]}/{page_dict["count"]}', callback_data='empty'),
+            InlineKeyboardButton(text='Вперед ➡️', callback_data='next_page')
+        ],
+        [
+            InlineKeyboardButton(text='❌ Удалить публикацию', callback_data='start_delete')
+        ]
+    ]
+    demonstration_keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return demonstration_keyboard
+
+
+async def return_to_queue():
+    """Кнопка для возврата из просмотра медиафайла обратно к очереди публикаций"""
+    button = [[InlineKeyboardButton(text='Вернуться', callback_data='return')]]
+    return InlineKeyboardMarkup(inline_keyboard=button)
+
+
+async def deletion_confirmation():
+    """Клавиатура для подтверждения удаления публикации"""
+    buttons = [[
+        InlineKeyboardButton(text='❌ Удалить', callback_data='delete'),
+        InlineKeyboardButton(text='🚫 Отмена', callback_data='return')
+    ]]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def switch_keyboard():
+    """Клавиатура для вкл/выкл очередей публикаций"""
+    queues_keyboard = InlineKeyboardBuilder()
+    channels_list = await db.get_channel_list()
+    for channel in channels_list:
+        queues_keyboard.button(text=f"Переключить {channel['channel_name']}",
+                               callback_data=SwitchQueue(
+                                   channel_id=channel['channel_id'],
+                                   channel_name=channel['channel_name']))
+    queues_keyboard.adjust(1)
+    return queues_keyboard.as_markup(resize_keyboard=True)
