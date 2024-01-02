@@ -47,9 +47,26 @@ class BotBase:
                                           "(channel_id BIGINT PRIMARY KEY,"
                                           "settings_info VARCHAR(155));")
 
+            # Таблица с настройками пользовательских сообщений
+            await self.connection.execute("CREATE TABLE IF NOT EXISTS users_mess"
+                                          "(mess_for VARCHAR(20) PRIMARY KEY,"
+                                          "mess_text TEXT)")
+
         except PostgresSyntaxError as exc:
             print()
             exit('Ups!\n' + str(exc))
+
+    async def get_users_messages(self):
+        """Метод выгружает сохраненные настройки пользовательских сообщений"""
+        result = await self.connection.fetch("SELECT * FROM public.users_mess")
+        return result
+
+    async def set_users_messages(self, mess_for: str, mess_text: str):
+        """Метод сохраняет настройки для пользовательских сообщений"""
+        await self.connection.execute(f"INSERT INTO public.users_mess"
+                                      f"(mess_for, mess_text)"
+                                      f"VALUES ('{mess_for}', '{mess_text}')"
+                                      f"ON CONFLICT (mess_for) DO UPDATE SET mess_text = '{mess_text}';")
 
     # ========== Методы управления каналами ==========
 

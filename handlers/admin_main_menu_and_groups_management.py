@@ -24,7 +24,7 @@ from asyncpg.exceptions import UniqueViolationError
 keyboards_dict = {
     '📝 Управление каналами': group_management,
     '⌛ Управление подписками': sub_manag,
-    '📜 Авто постинг': auto_posting,
+    '📜 Автопостинг': auto_posting,
     'Назад': main_admin_keyboard
 }
 

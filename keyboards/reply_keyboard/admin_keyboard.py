@@ -8,7 +8,8 @@ main_admin_keyboard = ReplyKeyboardBuilder()
 main_buttons = [
         KeyboardButton(text='📝 Управление каналами'),
         KeyboardButton(text='⌛ Управление подписками'),
-        KeyboardButton(text='📜 Авто постинг '),
+        KeyboardButton(text='📜 Автопостинг '),
+        KeyboardButton(text='⚙️ Настройка пользовательских сообщений'),
         KeyboardButton(text='📈 Статистика')
 ]
 
@@ -64,7 +65,7 @@ auto_posting.add(*ap_buttons)
 auto_posting.adjust(1)
 auto_posting = auto_posting.as_markup(resize_keyboard=True)
 
-# ========== Кнопка отмены ==========
+# ========== Кнопки отмены ==========
 
 cancel_button = ReplyKeyboardBuilder()
 c_button = [KeyboardButton(text='🚫 Отмена')]

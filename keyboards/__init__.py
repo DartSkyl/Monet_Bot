@@ -6,7 +6,8 @@ from .Inline_keyboard.inline_for_admins import (
     queue_selection_keyboard, tr_set_keyboard,
     AddingPublication, publication_type,
     view_publications_list, return_to_queue,
-    deletion_confirmation, SwitchQueue, switch_keyboard)
+    deletion_confirmation, SwitchQueue, switch_keyboard,
+    users_messages, redactor_for_message)
 from .reply_keyboard.admin_keyboard import (
     main_admin_keyboard,
     group_management,
@@ -14,7 +15,7 @@ from .reply_keyboard.admin_keyboard import (
     auto_posting,
     cancel_button,
     cancel_button_2,
-    returning_button
+    returning_button,
 )
 from .reply_keyboard.user_keyboard import main_user_keyboard
 
@@ -46,6 +47,8 @@ __all__ = (
     "returning_button",
     "SwitchQueue",
     "switch_keyboard",
+    "users_messages",
+    "redactor_for_message",
 
     # пользовательские клавиатуры
 

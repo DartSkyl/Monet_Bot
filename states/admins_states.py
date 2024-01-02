@@ -32,6 +32,12 @@ class AddingPost(StatesGroup):
     step_two = State()
     step_adding_text = State()
     step_adding_file = State()
-    step_three = State()
-    step_four = State()
+    step_three = State()  # ?
+    step_four = State()  # ?
     false_state = State()
+
+
+class UsersMessages(StatesGroup):
+    """Класс содержит стэйты для установки пользовательских сообщений"""
+    set_mess = State()
+    edit_mess = State()

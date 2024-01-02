@@ -75,7 +75,8 @@ async def queue_demonstration(callback: CallbackQuery, state: FSMContext):
                 # то переключаемся на последнюю публикацию в списке
                 next_publication = list_of_publication[page['count'] - 1]
                 page['page'] = page['count']
-    except IndexError:  # Если в очереди осталась одна запись и во время просмотра она опубликовалась,
+    except IndexError:
+        # Если в очереди осталась одна запись и во время просмотра она опубликовалась,
         # а пользователь решил полистать. Да маразм! И что?
         await callback.message.delete()
         await callback.message.answer(text='<b>Очередь публикаций пуста!</b>', reply_markup=auto_posting)
@@ -168,7 +169,7 @@ async def delete_publication(callback: CallbackQuery, state: FSMContext):
         await state.clear()
 
 
-@admin_router.message(F.text == '⏪ Вернуться')
+@admin_router.message(F.text == '⏪ Вернуться', AutoPost.view_publications)
 async def return_to_autoposting_menu(msg: Message, state: FSMContext):
     """Здесь пользователь возвращается в меню автопостинга"""
     await state.clear()

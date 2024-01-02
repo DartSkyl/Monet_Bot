@@ -190,3 +190,31 @@ async def switch_keyboard():
                                    channel_name=channel['channel_name']))
     queues_keyboard.adjust(1)
     return queues_keyboard.as_markup(resize_keyboard=True)
+
+
+async def users_messages():
+    """Клавиатура для выбора пользовательского сообщения"""
+    # Приветственное,
+    # при выдаче пробной подписки,
+    # если пробной подписки нет,
+    # если пробная уже выдавалась,
+    # когда подписка подходит к концу,
+    # когда подписка закончилась
+    buttons = [
+        [InlineKeyboardButton(text='Приветственное сообщение', callback_data='hi_mess')],
+        [InlineKeyboardButton(text='Сообщение пробной подписки', callback_data='trail_sub')],
+        [InlineKeyboardButton(text='Сообщение, если пробной подписки нет', callback_data='not_trail')],
+        [InlineKeyboardButton(text='Сообщение, если пробная подписка уже выдавалась', callback_data='was_trail')],
+        [InlineKeyboardButton(text='Сообщение для заканчивающийся подписки', callback_data='sub_end')],
+        [InlineKeyboardButton(text='Сообщение, когда подписка закончилась', callback_data='sub_stop')],
+        [InlineKeyboardButton(text='🚫 Отмена', callback_data='cancel')]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def redactor_for_message():
+    buttons = [
+        [InlineKeyboardButton(text='📝 Редактировать сообщение', callback_data='edit')],
+        [InlineKeyboardButton(text='⬅️ Назад', callback_data='go_back')]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

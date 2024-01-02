@@ -1,10 +1,12 @@
 from .admins_states import (GroupManagementStates,
-                            SubscriptionManagement, AutoPost, AddingPost)
+                            SubscriptionManagement, AutoPost, AddingPost,
+                            UsersMessages)
 
 
 __all__ = (
     "GroupManagementStates",
     "SubscriptionManagement",
     "AutoPost",
-    "AddingPost"
+    "AddingPost",
+    "UsersMessages"
 )

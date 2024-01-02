@@ -5,5 +5,6 @@ from . import (
     chat_member_handlers,
     admin_autoposting_settings,
     admin_autoposting_view_queue,
-    admin_autoposting_publication_management
+    admin_autoposting_publication_management,
+    admin_set_users_mess
 )

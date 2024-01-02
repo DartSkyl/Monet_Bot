@@ -1,6 +1,6 @@
 import asyncio
 import handlers  # noqa
-from loader import dp, db_connect, bot, admin_list_load, channels_load, sub_settings_load
+from loader import dp, db_connect, bot, admin_list_load, channels_load, sub_settings_load, load_user_messages
 from utils import admin_router, chat_member_router, users_router, create_publish_queue
 from utils.subscription_management import check_subscription
 
@@ -18,6 +18,8 @@ async def start_up():
     await channels_load()
     # Загружаем варианты подписок
     await sub_settings_load()
+    # Загружаем пользовательские сообщения
+    await load_user_messages()
     #  Пропускаем скопившиеся апдэйты
     await bot.delete_webhook(drop_pending_updates=True)
     await check_subscription()
