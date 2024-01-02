@@ -1,7 +1,8 @@
 import asyncio
 import handlers  # noqa
 from loader import dp, db_connect, bot, admin_list_load, channels_load, sub_settings_load
-from utils import admin_router, chat_member_router, users_router, cycle_controlling_subscriptions_start
+from utils import admin_router, chat_member_router, users_router, create_publish_queue
+from utils.subscription_management import check_subscription
 
 
 async def start_up():
@@ -19,6 +20,8 @@ async def start_up():
     await sub_settings_load()
     #  Пропускаем скопившиеся апдэйты
     await bot.delete_webhook(drop_pending_updates=True)
+    await check_subscription()
+    await create_publish_queue()
     # Стартуем! Я начну стрелять!
     print('Bot is work!')
     await dp.start_polling(bot)

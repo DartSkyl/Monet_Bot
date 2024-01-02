@@ -1,5 +1,5 @@
 from utils import users_router
-from kyeboards import main_user_keyboard
+from keyboards import main_user_keyboard
 from aiogram.types import Message
 # from aiogram import F
 from aiogram.filters import Command

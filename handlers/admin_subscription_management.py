@@ -1,8 +1,7 @@
-import time
 from loader import bot, channels_dict, subscription_dict, db
 from utils import admin_router, SubManag
 from states import SubscriptionManagement as SM
-from kyeboards import (
+from keyboards import (
     cancel_button, main_admin_keyboard,
     sub_manag, del_board, SubDel,
     add_sub_keyboard, AddSubForUser,
@@ -23,21 +22,32 @@ async def check_sub_settings(msg: Message) -> None:
     """Хэндлер выводит актуальную информацию по подпискам"""
     paid_chn_list = await db.get_paid_channels_list()
     sub_text = ''
-    for elem in paid_chn_list:
-        chn_name = ('<i>==========</i>\n<i><b>' + html.quote(elem['channel_name']) + '</b></i>:\n')
-        sub_text += chn_name
-        for period, cost in sorted(subscription_dict[elem['channel_id']].items()):
-            if period == 0:
-                sub_text += (f'Пробный период {int(cost / (60 * 60 * 24))} дня/дней\n' if (cost / (60 * 60 * 24)) > 0
-                             else 'Пробная подписка отключена\n')
-            else:
-                sub_text += f'Подписка на {period} дня/дней, стоимость {cost} рублей\n'
 
-    await msg.answer(text=sub_text, reply_markup=del_board(paid_chn_list))
+    for elem in paid_chn_list:
+        chn_name = f'<i>==========</i>\n<i><b>{html.quote(elem["channel_name"])} </b></i>:\n'
+        sub_text += chn_name
+        try:
+            for period, cost in sorted(subscription_dict[elem['channel_id']].items()):
+                if period == 0:
+                    sub_text += (f'Пробный период {int(cost / (60 * 60 * 24))} дня/дней\n' if (cost / (60 * 60 * 24)) > 0
+                                 else 'Пробная подписка отключена\n')
+                else:
+                    sub_text += f'Подписка на {period} дня/дней, стоимость {cost} рублей\n'
+        except KeyError:
+            pass
+
+    try:
+        await msg.answer(text=sub_text, reply_markup=del_board(paid_chn_list))
+    except TelegramBadRequest:
+        await msg.answer(text='Здесь слишком пусто')
+    except KeyError:
+        await msg.answer(text='Операций с подписками еще не производились')
 
 
 @admin_router.callback_query(SubDel.filter())
 async def sub_delete(callback: CallbackQuery, callback_data: SubDel) -> None:
+    """Хэндлер реагирует на нажатие кнопки inline клавиатуры для удаления вариантов подписки.
+    Результатом реакции является изменения сообщения и клавиатуры"""
     await SubManag.delete_subscription(chl_id=callback_data.chnl_id, period=callback_data.sub_period)
     await callback.answer()
     edit_text = ''
@@ -57,6 +67,7 @@ async def sub_delete(callback: CallbackQuery, callback_data: SubDel) -> None:
 
 @admin_router.message(F.text == '💵 Добавить платную подписку')
 async def set_paid_sub_step_1(msg: Message, state: FSMContext) -> None:
+    """Хэндлер запускает стэйт добавления варианта платной подписки"""
     m_text = ('Введите желаемый срок подписки и стоимость через пробел\n'
               '<i><b>Пример:</b></i> подписка на 30 дней стоимостью 100 рублей - "30 100" <b>без кавычек!</b>')
     # m_text = 'Выберете канал для добавления подписки:'
@@ -67,6 +78,7 @@ async def set_paid_sub_step_1(msg: Message, state: FSMContext) -> None:
 
 @admin_router.message(SM.set_paid_sub, F.text.regexp(r'\d{1,}\s\d{1,}$'))
 async def set_paid_sub_step_2(msg: Message, state: FSMContext) -> None:
+    """В хэндлере происходит выбор канала, на который происходит добавление варианта платной подписки"""
     sub_set = msg.text.split()
     if int(sub_set[0]) > 0:
         await state.set_data({'sub_info': [sub_set[0], int(sub_set[1])]})
@@ -161,7 +173,9 @@ async def add_subscription_2(msg: Message, state: FSMContext):
         channel_id=sub_info['ch_id'],
         period=int(msg.text)
     )
-    ans_text = (f'Подписка пользователю {sub_info["uid"]} на канал {sub_info["ch_name"]} '
+    # На всякий случай разбаним, а то автоматический разбаниватель не всегда работает
+    await bot.unban_chat_member(chat_id=sub_info['ch_id'], user_id=sub_info['uid'])
+    ans_text = (f'Подписка пользователю {sub_info["uid"]} на канал {html.quote(sub_info["ch_name"])} '
                 f'сроком на {msg.text} дня(дней) добавлена')
     await msg.answer(text=ans_text, reply_markup=sub_manag)
     await state.clear()
@@ -169,16 +183,19 @@ async def add_subscription_2(msg: Message, state: FSMContext):
 
 @admin_router.message(SM.set_trail_sub)
 async def error_input_trail_sub(msg: Message) -> None:
+    """Хэндлер отлавливает некорректный ввод при добавлении платного варианта подписки"""
     await msg.answer(text='Неверный ввод!\nЧисло должно быть целым и положительным', reply_markup=cancel_button)
 
 
 @admin_router.message(SM.add_subscription_a_user)
 async def error_input_add_sub(msg: Message) -> None:
+    """Хэндлер отлавливает некорректный ввод при добавлении подписки пользователю в ручную"""
     await msg.answer(text='Неверный ввод!\nЧисло должно быть целым и положительным', reply_markup=cancel_button)
 
 
 @admin_router.message(SM.set_paid_sub)
 async def error_input_paid_sub(msg: Message) -> None:
+    """Хэндлер отлавливает некорректный ввод при добавлении платного варианта подписки"""
     await msg.answer(text='Неверный ввод!\n'
                           'Пример: подписка на 30 дней стоимостью 100 рублей - '
                           '"30 100" без кавычек и аккуратнее с пробелами',

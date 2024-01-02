@@ -1,7 +1,8 @@
 from .admin_router import admin_router
 from .chat_member_router import chat_member_router
 from .users_router import users_router
-from .subscription_management import SubManag, cycle_controlling_subscriptions_start
+from .subscription_management import SubManag
+from .autoposting_queue_core import dict_queue, create_publish_queue, add_queue, delete_queue
 
 
 __all__ = (
@@ -9,5 +10,8 @@ __all__ = (
     "chat_member_router",
     "users_router",
     "SubManag",
-    "cycle_controlling_subscriptions_start"
+    "dict_queue",
+    "create_publish_queue",
+    "add_queue",
+    "delete_queue"
 )

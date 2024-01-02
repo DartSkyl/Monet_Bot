@@ -24,7 +24,7 @@ class BotBase:
         try:
 
             # Таблица со всеми группами
-            await self.connection.execute("CREATE TABLE IF NOT EXISTS groups"
+            await self.connection.execute("CREATE TABLE IF NOT EXISTS all_channels"
                                           "(channel_id BIGINT PRIMARY KEY,"
                                           "channel_name VARCHAR(130),"
                                           "date_added INT,"
@@ -39,8 +39,13 @@ class BotBase:
             # Таблица с настройками подписок. Что бы при перезапуске бота не настраивать заново
             await self.connection.execute("CREATE TABLE IF NOT EXISTS sub_settings"
                                           # Строка будет хранить сразу и период подписки и ID канала для этого варианта
-                                          "(chl_id_period VARCHAR(100) PRIMARY KEY ," 
+                                          "(chl_id_period VARCHAR(100) PRIMARY KEY ,"
                                           "cost INT);")
+
+            # Таблица с информацией о работе очередей публикаций
+            await self.connection.execute("CREATE TABLE IF NOT EXISTS queue_info"
+                                          "(channel_id BIGINT PRIMARY KEY,"
+                                          "settings_info VARCHAR(155));")
 
         except PostgresSyntaxError as exc:
             print()
@@ -56,23 +61,29 @@ class BotBase:
 
     async def add_channel(self, channel_id: int, channel_name: str, paid: bool) -> None:
         """Добавление канала в общую таблицу с каналами"""
-        await self.connection.execute("INSERT INTO public.groups"
+        await self.connection.execute("INSERT INTO public.all_channels"
                                       "(channel_id, channel_name, date_added, is_paid)"
                                       f"VALUES ({channel_id}, '{channel_name}', {int(time.time())}, {paid});")
 
     async def get_channel_list(self) -> List[Record]:
         """Получение списка имеющихся каналов из общей таблицы с каналами"""
-        result = await self.connection.fetch("SELECT * FROM public.groups;")
+        result = await self.connection.fetch("SELECT * FROM public.all_channels;")
         return result
 
     async def get_paid_channels_list(self) -> List[Record]:
         """Получение списка имеющихся закрытых каналов из общей таблицы с каналами"""
-        result = await self.connection.fetch("SELECT * FROM public.groups WHERE is_paid = true;")
+        result = await self.connection.fetch("SELECT * FROM public.all_channels WHERE is_paid = true;")
         return result
 
     async def delete_channel(self, channel_id: int):
-        """Удаление канала из общей таблицы с каналами"""
-        await self.connection.execute(f"DELETE FROM public.groups WHERE channel_id = {channel_id};")
+        """Удаление канала из общей таблицы с каналами """
+        await self.connection.execute(f"DELETE FROM public.all_channels WHERE channel_id = {channel_id};")
+
+    async def delete_channel_table(self, channel_id: int):
+        """Если канал платный, то у него есть своя таблица, которую нужно удалить, а так же
+        все пробные подписки связанные с этим каналом"""
+        await self.connection.execute(f"DROP TABLE public.channel_{abs(channel_id)};"
+                                      f"DELETE FROM public.trail_subscription WHERE channel_id = {channel_id}")
 
     # ========== Методы управления подписками ==========
 
@@ -134,3 +145,55 @@ class BotBase:
     async def delete_user_from_channel(self, user_id: int, channel_id: int) -> None:
         """Метод удаления пользователя из таблицы конкретного канала"""
         await self.connection.execute(f"DELETE FROM public.channel_{abs(channel_id)} WHERE user_id = {user_id}")
+
+    # ========== Методы управления автопостингом ==========
+
+    async def save_queue_info(self, channel_id: int, queue_info: str) -> None:
+        """Метод записывает информацию о настройках очереди публикаций"""
+        await self.connection.execute("INSERT INTO public.queue_info (channel_id, settings_info)"
+                                      f"VALUES ({channel_id}, '{queue_info}')"
+                                      f"ON CONFLICT (channel_id) DO UPDATE SET settings_info = '{queue_info}';")
+
+    async def get_queue_info(self, channel_id: int) -> list:
+        """Метод выдает информацию о настройках очереди публикаций"""
+        result = await self.connection.fetch(f"SELECT settings_info FROM public.queue_info "
+                                             f"WHERE channel_id = {channel_id};")
+        return result
+
+    async def delete_jobstore_table(self, channel_id: int) -> None:
+        """Метод удаляет таблицу с заданиями планировщика при удалении канала, а так же запись из таблицы queue_info"""
+        await self.connection.execute(f'DROP TABLE public.aps{abs(channel_id)};'
+                                      f'DELETE FROM public.queue_info WHERE channel_id = {abs(channel_id)}')
+
+    async def create_publication_table(self, channel_id: int) -> None:
+        """Метод создает таблицу с резервной копией информации для каждой публикации
+        в очереди публикаций на случай сбоя"""
+        await self.connection.execute(f"CREATE TABLE IF NOT EXISTS list_of_publication_{abs(channel_id)}"
+                                      f"(container_id VARCHAR(10) PRIMARY KEY,"
+                                      f"content_type VARCHAR(10),"
+                                      f"file_id VARCHAR(100),"
+                                      f"publication_text TEXT)")
+
+    async def delete_publication_table(self, channel_id: int) -> None:
+        """Метод удаляет таблицу с резервной копией списка публикаций при удалении канала"""
+        await self.connection.execute(f"DROP TABLE public.list_of_publication_{abs(channel_id)}")
+
+    async def get_list_of_publication(self, channel_id: int) -> list:
+        """Метод возвращает список со всеми сохраненными публикациями"""
+        result = await self.connection.fetch(f"SELECT * FROM public.list_of_publication_{abs(channel_id)}")
+        return result
+
+    async def save_publication(self, channel_id: int,
+                               container_id: str,
+                               content_type: str,
+                               file_id: str,
+                               publication_text: str) -> None:
+        """Метод сохраняет публикацию в соответствующую таблицу"""
+        await self.connection.execute(f"INSERT INTO public.list_of_publication_{abs(channel_id)} "
+                                      f"(container_id, content_type, file_id, publication_text)"
+                                      f"VALUES ('{container_id}', '{content_type}', '{file_id}', '{publication_text}');")
+
+    async def remove_publication_from_db(self, channel_id: int, container_id: str) -> None:
+        """Метод удаляет уже опубликованную публикацию"""
+        await self.connection.execute(f"DELETE FROM public.list_of_publication_{abs(channel_id)} "
+                                      f"WHERE container_id = '{container_id}'")

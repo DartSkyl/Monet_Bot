@@ -6,6 +6,8 @@ from config_data.config import BOT_TOKEN, DB_INFO, MAIN_GROUP_ID
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
+# from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 
 db = BotBase(DB_INFO[0], DB_INFO[1], DB_INFO[2], DB_INFO[3])
 
@@ -61,11 +63,6 @@ async def channels_load():
 
 async def sub_settings_load():
     """Функция загружает из БД настройки для подписок в оперативную память"""
-
-    # Прописать ситуация для первого запуска, когда нет даже ключа 0 для пробной подписки!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    # Так же вариант действий для удаления группы из бота
-
     st_list = await db.get_sub_setting()
     for elem in st_list:
         dict_content = elem['chl_id_period'].split('_')

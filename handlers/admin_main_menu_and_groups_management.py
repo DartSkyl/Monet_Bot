@@ -1,9 +1,9 @@
-from loader import bot, db, channels_dict
-from utils import admin_router, cycle_controlling_subscriptions_start
+from loader import bot, db, channels_dict, subscription_dict
+from utils import admin_router, add_queue, delete_queue, SubManag
 from states import GroupManagementStates as GMS
 
 # Импорт всех клавиатур администратора
-from kyeboards import (
+from keyboards import (
     main_admin_keyboard,
     group_management,
     sub_manag,
@@ -30,18 +30,19 @@ keyboards_dict = {
 
 
 @admin_router.message(Command('start'))
-async def start(msg: Message) -> None:
+async def start(msg: Message, state: FSMContext) -> None:
     await msg.answer(f'Добро пожаловать, <b>{msg.from_user.first_name}</b>!'
                      f'\nВыберете действие:',
                      reply_markup=main_admin_keyboard)
-    await cycle_controlling_subscriptions_start()
+    await state.clear()
 
 
 @admin_router.message(F.text.in_(keyboards_dict))
-async def admins_menu(msg: Message) -> None:
+async def admins_menu(msg: Message, state: FSMContext) -> None:
     """ Хэндлер реализует навигацию по администраторскому меню через словарь"""
 
     await msg.answer(text='Выберете операцию:', reply_markup=keyboards_dict[msg.text])
+    await state.clear()
 
 
 @admin_router.message(F.text == "📃 Список каналов")
@@ -76,7 +77,7 @@ async def free_channel_add(msg: Message, state: FSMContext):
         await state.set_data({'paid': True})
 
     await msg.answer("Введите ID канала\n"
-                     "ID канала должно быть <b>целый отрицательным числом!</b>\n"
+                     "ID канала должно быть <b>целым отрицательным числом!</b>\n"
                      "Пример: -1001972569167\n"
                      "Если вы не знаете ID канала, то перешлите любой пост из этого канала боту "
                      "@LeadConverterToolkitBot\n"
@@ -95,11 +96,16 @@ async def adding_free_ch(msg: Message, state: FSMContext):
         # Так же добавляем канал в оперативную память
         if paid['paid']:
             channels_dict['is_paid'].append(added_ch.id)
+            # Сразу установим начальные настройки для пробной подписки:
+            subscription_dict[int(msg.text)] = {0: 0}
+            await db.set_sub_setting(chl_id_period=(msg.text + '_' + '0'), cost='0')
             # И сразу создадим для канала отдельную таблицу,
             # что бы контролировать подписки пользователей
             await db.add_channel_table(int(msg.text))
+            await add_queue(int(msg.text))
         else:
             channels_dict['free'].append(added_ch.id)
+            await add_queue(int(msg.text))
 
         reply_msg_text = ("Канал добавлен!\n"
                           f"Название канала - {html.bold(html.quote(added_ch.title))}\n")
@@ -112,7 +118,6 @@ async def adding_free_ch(msg: Message, state: FSMContext):
         await msg.answer(text='Канал с таким ID не найден или бот не является администратором данного канала!\n'
                               'Уточните ID канала и повторите попытку', reply_markup=cancel_button)
         await state.set_state(GMS.adding_channel)  # Устанавливаем стэйт заново
-        print(exc)
 
     except UniqueViolationError as exc:
         # Данное исключение будет вызвано если канал с таким ID уже есть в базе данных
@@ -146,6 +151,9 @@ async def delete_channel(msg: Message, state: FSMContext) -> None:
                 channels_dict['free'].remove(int(msg.text))
             else:
                 channels_dict['is_paid'].remove(int(msg.text))
+                await db.delete_channel_table(int(msg.text))
+                await SubManag.clear_channel_subscription(int(msg.text))
+            await delete_queue(int(msg.text))
         else:
             raise ValueError
 
