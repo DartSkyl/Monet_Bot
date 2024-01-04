@@ -2,10 +2,10 @@ from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
 kb_buttons = [
-    [
-        KeyboardButton(text='✅ Активировать пробную подписку'),
-        KeyboardButton(text='ℹ️ Посмотреть подписку')
-    ]
+        [KeyboardButton(text='🔎 Посмотреть доступные каналы')],
+        [KeyboardButton(text='ℹ️ Информация о Вашей подписке')],
+        [KeyboardButton(text='💳 Оплатить подписку')],
+        [KeyboardButton(text='📨 Связаться с администрацией')]
 ]
 
 main_user_keyboard = ReplyKeyboardMarkup(

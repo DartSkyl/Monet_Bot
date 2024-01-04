@@ -17,6 +17,14 @@ main_admin_keyboard.add(*main_buttons)
 main_admin_keyboard.adjust(1)
 main_admin_keyboard = main_admin_keyboard.as_markup(resize_keyboard=True)
 
+
+users_msg_buttons = [
+    [KeyboardButton(text='📄 Системные сообщения')],
+    [KeyboardButton(text='📝 Описание каналов')]
+]
+
+users_msg_markup = ReplyKeyboardMarkup(keyboard=users_msg_buttons, resize_keyboard=True)
+
 # ========== Клавиатура управления группами ==========
 
 group_management = ReplyKeyboardBuilder()

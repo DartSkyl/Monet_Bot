@@ -39,5 +39,7 @@ class AddingPost(StatesGroup):
 
 class UsersMessages(StatesGroup):
     """Класс содержит стэйты для установки пользовательских сообщений"""
-    set_mess = State()
+    set_system_mess = State()
+    set_channel_mess = State()
     edit_mess = State()
+    edit_channel_mess = State()

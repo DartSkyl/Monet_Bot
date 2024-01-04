@@ -97,7 +97,7 @@ async def add_sub_keyboard():
 
 
 async def queue_selection_keyboard():
-    """Клавиатура для выбора очереди публикаций"""
+    """Клавиатура для выбора очереди публикаций и не только"""
     queues_keyboard = InlineKeyboardBuilder()
     channels_list = await db.get_channel_list()
     for channel in channels_list:
@@ -192,16 +192,11 @@ async def switch_keyboard():
     return queues_keyboard.as_markup(resize_keyboard=True)
 
 
-async def users_messages():
+async def users_system_messages():
     """Клавиатура для выбора пользовательского сообщения"""
-    # Приветственное,
-    # при выдаче пробной подписки,
-    # если пробной подписки нет,
-    # если пробная уже выдавалась,
-    # когда подписка подходит к концу,
-    # когда подписка закончилась
     buttons = [
         [InlineKeyboardButton(text='Приветственное сообщение', callback_data='hi_mess')],
+        [InlineKeyboardButton(text='Сообщение после оплаты', callback_data='paid')],
         [InlineKeyboardButton(text='Сообщение пробной подписки', callback_data='trail_sub')],
         [InlineKeyboardButton(text='Сообщение, если пробной подписки нет', callback_data='not_trail')],
         [InlineKeyboardButton(text='Сообщение, если пробная подписка уже выдавалась', callback_data='was_trail')],
@@ -213,8 +208,23 @@ async def users_messages():
 
 
 async def redactor_for_message():
+    """Клавиатура для редактирования сообщений"""
     buttons = [
         [InlineKeyboardButton(text='📝 Редактировать сообщение', callback_data='edit')],
         [InlineKeyboardButton(text='⬅️ Назад', callback_data='go_back')]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+async def channels_messages_markup():
+    """Клавиатура для канала, которому настраивают описание"""
+    channels_keyboard = InlineKeyboardBuilder()
+    channels_list = await db.get_channel_list()
+    for channel in channels_list:
+        channels_keyboard.button(text=channel['channel_name'],
+                                 callback_data=QueueSelection(
+                                     chnl_id=channel['channel_id'],
+                                     chnl_name=channel['channel_name']))
+    channels_keyboard.button(text='🚫 Отмена', callback_data='cancel')
+    channels_keyboard.adjust(1)
+    return channels_keyboard.as_markup(resize_keyboard=True)
