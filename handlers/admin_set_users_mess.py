@@ -114,6 +114,28 @@ async def set_message(msg: Message, state: FSMContext):
     await state.clear()
 
 
+@admin_router.message(F.text == '📩 Установить контакт для подписчиков')
+async def set_contact(msg: Message, state: FSMContext):
+    """Здесь задаем стэйт для установки контакта для подписчиков"""
+    await state.set_state(UsersMessages.set_admin_contact)
+    await msg.answer(text='Введите @UserName администратора:', reply_markup=cancel_button)
+
+
+@admin_router.message(UsersMessages.set_admin_contact, F.text.regexp(r'@\w{5,32}'))
+async def get_admin_username(msg: Message, state: FSMContext):
+    """Здесь ловим юзернэйм администратора"""
+    await db.set_users_messages(mess_for='admin_username', mess_text=msg.text)
+    users_mess_dict['admin_username'] = msg.text
+    await msg.answer(text='Контакт сохранен', reply_markup=users_msg_markup)
+    await state.clear()
+
+
+@admin_router.message(UsersMessages.set_admin_contact)
+async def error_input_username(msg: Message):
+    """Сообщаем о некорректности ввода"""
+    await msg.answer(text='Неверный ввод!')
+
+
 @admin_router.callback_query(UsersMessages.set_system_mess, F.data == 'cancel')
 async def cancel_set_mess(callback: CallbackQuery, state: FSMContext):
     """Здесь отмена"""

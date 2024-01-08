@@ -14,7 +14,8 @@ from aiogram import F, html
 
 @admin_router.message(F.text == '2')
 async def test2(msg):
-    print(subscription_dict)
+    result = await bot.get_chat(-1001513097504)
+    print(result.invite_link)
 
 
 @admin_router.message(F.text == '⚙️ Посмотреть/удалить установленные подписки')

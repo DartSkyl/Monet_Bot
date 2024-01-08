@@ -20,7 +20,9 @@ main_admin_keyboard = main_admin_keyboard.as_markup(resize_keyboard=True)
 
 users_msg_buttons = [
     [KeyboardButton(text='📄 Системные сообщения')],
-    [KeyboardButton(text='📝 Описание каналов')]
+    [KeyboardButton(text='📝 Описание каналов')],
+    [KeyboardButton(text='📩 Установить контакт для подписчиков')],
+    [KeyboardButton(text='Назад')]
 ]
 
 users_msg_markup = ReplyKeyboardMarkup(keyboard=users_msg_buttons, resize_keyboard=True)

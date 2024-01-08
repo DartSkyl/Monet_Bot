@@ -8,6 +8,12 @@ from .Inline_keyboard.inline_for_admins import (
     view_publications_list, return_to_queue,
     deletion_confirmation, SwitchQueue, switch_keyboard,
     users_system_messages, redactor_for_message, channels_messages_markup)
+
+from .Inline_keyboard.inline_for_users import (
+    channels_selection, view_description, ChannelsSelection,
+    subscription_keyboard, SubscriptionSelection,
+    ChannelsForPayment, channels_for_payment
+)
 from .reply_keyboard.admin_keyboard import (
     main_admin_keyboard,
     group_management,
@@ -17,7 +23,7 @@ from .reply_keyboard.admin_keyboard import (
     cancel_button_2,
     returning_button, users_msg_markup
 )
-from .reply_keyboard.user_keyboard import main_user_keyboard
+from .reply_keyboard.user_keyboard import main_user_keyboard, user_cancel
 
 __all__ = (
 
@@ -54,6 +60,13 @@ __all__ = (
 
     # пользовательские клавиатуры
 
-    "main_user_keyboard"
-
+    "main_user_keyboard",
+    "channels_selection",
+    "view_description",
+    "ChannelsSelection",
+    "subscription_keyboard",
+    "SubscriptionSelection",
+    "ChannelsForPayment",
+    "channels_for_payment",
+    "user_cancel"
 )

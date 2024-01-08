@@ -1,5 +1,4 @@
 from loader import subscription_dict, channels_dict, bot, db
-from aiogram import html
 from aiogram.utils.keyboard import InlineKeyboardBuilder, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters.callback_data import CallbackData
 

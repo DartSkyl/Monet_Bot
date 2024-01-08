@@ -13,3 +13,9 @@ main_user_keyboard = ReplyKeyboardMarkup(
         resize_keyboard=True,
         input_field_placeholder="Выберите действие"
     )
+
+
+user_cancel = ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text='🚫 Отмена')]],
+        resize_keyboard=True,
+)

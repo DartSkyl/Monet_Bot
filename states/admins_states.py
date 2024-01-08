@@ -43,3 +43,4 @@ class UsersMessages(StatesGroup):
     set_channel_mess = State()
     edit_mess = State()
     edit_channel_mess = State()
+    set_admin_contact = State()
