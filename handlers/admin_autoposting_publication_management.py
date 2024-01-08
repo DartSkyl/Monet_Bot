@@ -1,14 +1,13 @@
 import asyncio
 from utils import admin_router, dict_queue
 from states import AddingPost
-from keyboards import (cancel_button, cancel_button_2, auto_posting,
+from keyboards import (cancel_button, auto_posting,
                        queue_selection_keyboard, QueueSelection,
                        AddingPublication, publication_type)
 
 from aiogram import F, html
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
-from aiogram.exceptions import TelegramBadRequest
 
 
 @admin_router.message(F.text == '➕ Добавить публикацию в очередь')

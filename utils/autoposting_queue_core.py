@@ -1,26 +1,15 @@
-import logging
 import time
 from config_data.config import PG_URI
 from loader import db, bot, admins_id
 from .autoposting_content_container import ContentContainer
 
-
-from apscheduler.events import EVENT_JOB_MISSED, EVENT_JOB_ERROR
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from aiogram import html
 from aiogram.exceptions import TelegramForbiddenError
 
 
-logging.basicConfig()
-logging.getLogger('apscheduler').setLevel(logging.DEBUG)
-
 dict_queue = dict()
-
-
-# def my_listener(event):
-#     """Запустится если во время публикации поста через функцию автопостинга возникнет ошибка"""
-#     print(event.exception)
 
 
 async def publish_post(channel_id: int):
@@ -95,7 +84,6 @@ class AutoPosting:
 
     def __init__(self, chn_id: str) -> None:
         self._scheduler = AsyncIOScheduler(gconfig={'apscheduler.timezone': 'Europe/Moscow'})
-        # self._scheduler.add_listener(my_listener,  EVENT_JOB_ERROR)
         self._scheduler.add_jobstore(jobstore='sqlalchemy', alias=f'{chn_id}', url=PG_URI, tablename=f'aps{chn_id}')
         self._alias = f'{chn_id}'  # Свой псевдоним, что бы использовать его и не передавать каждый раз заново
         self._trigger_settings = None

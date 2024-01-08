@@ -2,7 +2,6 @@ from loader import bot, db, channels_dict, subscription_dict
 from utils import admin_router, add_queue, delete_queue, SubManag
 from states import GroupManagementStates as GMS
 
-# Импорт всех клавиатур администратора
 from keyboards import (
     main_admin_keyboard,
     group_management,
@@ -11,7 +10,7 @@ from keyboards import (
     cancel_button
 )
 
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from aiogram import F, html
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
@@ -184,3 +183,10 @@ async def error_input(msg: Message):
     await msg.answer(text="Не корректный ввод!\n"
                           "ID канала должно быть <b>целым отрицательным числом!</b>\n"
                           "Пример: -1001972569167\n", reply_markup=cancel_button)
+
+
+@admin_router.message(Command('get_log'))
+async def get_bot_log(msg: Message):
+    """Команда выгружает в чат файл с логом бота"""
+    log_file = FSInputFile('bot.log')
+    await msg.answer_document(document=log_file)

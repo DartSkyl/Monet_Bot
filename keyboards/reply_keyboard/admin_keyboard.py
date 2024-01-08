@@ -3,24 +3,24 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, ReplyKeyboardMarkup
 
 # ========== Главная клавиатура администратора ==========
 
-main_admin_keyboard = ReplyKeyboardBuilder()
+# main_admin_keyboard = ReplyKeyboardBuilder()
 
 main_buttons = [
-        KeyboardButton(text='📝 Управление каналами'),
-        KeyboardButton(text='⌛ Управление подписками'),
-        KeyboardButton(text='📜 Автопостинг '),
-        KeyboardButton(text='⚙️ Настройка пользовательских сообщений'),
-        KeyboardButton(text='📈 Статистика')
+        [KeyboardButton(text='📝 Управление каналами'),
+         KeyboardButton(text='⌛ Управление подписками')],
+        [KeyboardButton(text='📜 Автопостинг '),
+         KeyboardButton(text='📈 Статистика')],
+        [KeyboardButton(text='⚙️ Настройка пользовательских сообщений')]
 ]
-
-main_admin_keyboard.add(*main_buttons)
-main_admin_keyboard.adjust(1)
-main_admin_keyboard = main_admin_keyboard.as_markup(resize_keyboard=True)
+main_admin_keyboard = ReplyKeyboardMarkup(keyboard=main_buttons, resize_keyboard=True)
+# main_admin_keyboard.add(*main_buttons)
+# main_admin_keyboard.adjust(1)
+# main_admin_keyboard = main_admin_keyboard.as_markup(resize_keyboard=True)
 
 
 users_msg_buttons = [
-    [KeyboardButton(text='📄 Системные сообщения')],
-    [KeyboardButton(text='📝 Описание каналов')],
+    [KeyboardButton(text='📄 Системные сообщения'),
+     KeyboardButton(text='📝 Описание каналов')],
     [KeyboardButton(text='📩 Установить контакт для подписчиков')],
     [KeyboardButton(text='Назад')]
 ]
@@ -34,7 +34,7 @@ group_management = ReplyKeyboardBuilder()
 gm_buttons = [
     KeyboardButton(text='📃 Список каналов'),
     KeyboardButton(text='➕ Добавить открытый канал'),
-    KeyboardButton(text='➕➕ Добавить закрытый канал'),
+    KeyboardButton(text='➕➕ Добавить платный канал'),
     KeyboardButton(text='➖ Удалить канал'),
     KeyboardButton(text='Назад')
 ]

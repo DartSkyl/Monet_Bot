@@ -11,7 +11,7 @@ from aiogram.fsm.context import FSMContext
 
 
 @admin_router.message(F.text == '⚙️ Настройка пользовательских сообщений')
-async def start_set_users_mess(msg: Message, state: FSMContext):
+async def start_set_users_mess(msg: Message):
     """Здесь стартует настройка или просмотр пользовательских сообщений"""
     await msg.answer(text='Выберете опцию:', reply_markup=users_msg_markup)
 
@@ -31,14 +31,14 @@ async def channels_messages(msg: Message, state: FSMContext):
 
 
 @admin_router.callback_query(UsersMessages.set_system_mess, F.data == 'go_back')
-async def back_to_system_messages(callback: CallbackQuery, state: FSMContext):
+async def back_to_system_messages(callback: CallbackQuery):
     """Здесь возврат к системным сообщениям"""
     await callback.message.delete()
     await callback.message.answer(text='Выберете сообщение:', reply_markup=await users_system_messages())
 
 
 @admin_router.callback_query(UsersMessages.set_channel_mess, F.data == 'go_back')
-async def back_to_channels_messages(callback: CallbackQuery, state: FSMContext):
+async def back_to_channels_messages(callback: CallbackQuery):
     """Здесь возврат к описаниям каналов"""
     await callback.message.delete()
     await callback.message.answer(text='Описание какого канала будем настраивать?',

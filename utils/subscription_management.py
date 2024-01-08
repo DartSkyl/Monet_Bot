@@ -4,17 +4,10 @@ from aiogram.exceptions import TelegramBadRequest
 
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-import logging
-
-
-logging.basicConfig()
-logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
 
 async def cycle_controlling_subscriptions() -> None:
     """Данная функция передается планировщику, в качестве задачи которая проверяет подписку пользователей"""
-    print('\nNew cycle\n')
-    start_time = time.time()
     # Проходимся по всем закрытым каналам
     for ch_id in channels_dict['is_paid']:
         # Формируем список из пользователей и окончаний их подписки
@@ -25,25 +18,21 @@ async def cycle_controlling_subscriptions() -> None:
             subscription = int(user['end_of_subscription']) - int(time.time())
 
             if 82800 > subscription > 86400:
-                # await bot.send_message(text=users_mess_dict['sub_end'], chat_id=user['user_id'])
-                print('|'.join(['Осталось меньше суток', subscription, user['user_id']]))
+                await bot.send_message(text=users_mess_dict['sub_end'], chat_id=user['user_id'])
 
             elif subscription <= 0:
                 try:
-                    # await bot.ban_chat_member(chat_id=ch_id, user_id=user['user_id'],
-                    #                           # Разбаним через 60 секунд, что бы после оплаты
-                    #                           # подписки пользователь мог вернуться
-                    #                           until_date=(int(time.time()) + 60))
+                    await bot.ban_chat_member(chat_id=ch_id, user_id=user['user_id'],
+                                              # Разбаним через 60 секунд, что бы после оплаты
+                                              # подписки пользователь мог вернуться
+                                              until_date=(int(time.time()) + 60))
                     await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
-                    # await bot.send_message(chat_id=user['user_id'], text=users_mess_dict['sub_stop'])
-                    print(f'User with ID {user["user_id"]} kicked!')
+                    await bot.send_message(chat_id=user['user_id'], text=users_mess_dict['sub_stop'])
                     # На случай, если пользователя с таким ID больше не существует
                 except TelegramBadRequest as exc:
-                    print(f'Пользователя с таким ID ({user["user_id"]}) больше не существует!')
+                    pass
                 finally:
                     await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
-    end_time = time.time() - start_time
-    print(end_time)
 
 
 async def check_subscription():
@@ -54,7 +43,7 @@ async def check_subscription():
 
     sub_scheduler.add_job(
         func=cycle_controlling_subscriptions,
-        trigger='interval', hours=1,  # Проверка происходит каждые два часа
+        trigger='interval', hours=2,  # Проверка происходит каждые два часа
         id='sub_control',
         replace_existing=True
     )
@@ -74,7 +63,6 @@ class SubManag:
             subscription_dict[chn_id][0] = 60 * 60 * 24 * period
             await db.set_sub_setting(chl_id_period=(str(chn_id) + '_' + '0'), cost=subscription_dict[chn_id][0])
         except KeyError as exc:
-            print(exc)
             subscription_dict[chn_id] = {0: 60 * 60 * 24 * period}
             await db.set_sub_setting(chl_id_period=(str(chn_id) + '_' + '0'), cost=subscription_dict[chn_id][0])
         # Не забываем, что в оперативной памяти, у каждого канала,

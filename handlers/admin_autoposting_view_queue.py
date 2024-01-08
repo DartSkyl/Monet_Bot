@@ -1,10 +1,10 @@
 from utils import admin_router, dict_queue
 from states import AutoPost
-from keyboards import (auto_posting, queue_selection_keyboard, cancel_button,
-                       cancel_button_2, QueueSelection, view_publications_list, return_to_queue,
+from keyboards import (auto_posting, queue_selection_keyboard,
+                       QueueSelection, view_publications_list, return_to_queue,
                        deletion_confirmation, returning_button)
 
-from aiogram import F, html
+from aiogram import F
 from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.exceptions import TelegramBadRequest
@@ -140,7 +140,6 @@ async def start_deleting_publication(callback: CallbackQuery, state: FSMContext)
 @admin_router.callback_query(AutoPost.view_publications, F.data == 'delete')
 async def delete_publication(callback: CallbackQuery, state: FSMContext):
     """Здесь происходит удаление публикации из очереди публикаций"""
-    # await callback.message.delete()
 
     publication_info = await state.get_data()  # Для удобства скинем все в один словарь
 

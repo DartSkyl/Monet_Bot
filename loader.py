@@ -1,12 +1,10 @@
-from typing import List, Dict
+from typing import List
 
 from database.base import BotBase
 from config_data.config import BOT_TOKEN, DB_INFO, MAIN_GROUP_ID
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-
-# from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 
 db = BotBase(DB_INFO[0], DB_INFO[1], DB_INFO[2], DB_INFO[3])
@@ -27,12 +25,9 @@ channels_dict = {
     "is_paid": []
 }
 
-# Переписать!!!!!!!!!!!!!!!!!!!!!!!!!
-
-# В этом словаре хранятся варианты для платной подписки.
-# Ключ это срок подписки в сутках, а значение это стоимость.
-# Например:{'30': 100} - это подписка на 30 суток стоимостью 100 рублей
-# За исключением ключа "0". Под этим ключом хранится период пробной подписки в секундах
+# Словарь будет следующей структуры: {-173872361198: {10: 100}} - под ключом ID канала
+# будет храниться еще один словарь, где ключ это период подписки,
+# а значение это стоимость подписки. Под ключом 0 будет храниться пробный период в секундах
 subscription_dict = dict()
 
 # Словарь будет заполнен значениями "по-умолчанию",
@@ -59,7 +54,6 @@ async def db_connect():
 async def load_user_messages():
     """Функция выгружает пользовательские сообщения в оперативную память"""
     messages = await db.get_users_messages()
-
     for mess in messages:
         users_mess_dict[mess['mess_for']] = mess['mess_text']
 

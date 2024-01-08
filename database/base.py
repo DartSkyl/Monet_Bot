@@ -2,7 +2,6 @@ import time
 from typing import List
 import asyncpg as apg
 from asyncpg import Record
-from asyncpg.exceptions import PostgresSyntaxError
 
 
 class BotBase:
@@ -21,40 +20,34 @@ class BotBase:
                                             host=self.db_host)
 
     async def check_db_structure(self) -> None:
-        try:
+        # Таблица со всеми группами
+        await self.connection.execute("CREATE TABLE IF NOT EXISTS all_channels"
+                                      "(channel_id BIGINT PRIMARY KEY,"
+                                      "channel_name VARCHAR(130),"
+                                      "date_added INT,"
+                                      "is_paid BOOLEAN);")
 
-            # Таблица со всеми группами
-            await self.connection.execute("CREATE TABLE IF NOT EXISTS all_channels"
-                                          "(channel_id BIGINT PRIMARY KEY,"
-                                          "channel_name VARCHAR(130),"
-                                          "date_added INT,"
-                                          "is_paid BOOLEAN);")
+        # Таблица с юзерами, которым была выдана пробная подписка
+        await self.connection.execute("CREATE TABLE IF NOT EXISTS trail_subscription"
+                                      "(user_id BIGINT,"
+                                      "channel_id BIGINT,"
+                                      "data_activate INT);")
 
-            # Таблица с юзерами, которым была выдана пробная подписка
-            await self.connection.execute("CREATE TABLE IF NOT EXISTS trail_subscription"
-                                          "(user_id BIGINT,"
-                                          "channel_id BIGINT,"
-                                          "data_activate INT);")
+        # Таблица с настройками подписок. Что бы при перезапуске бота не настраивать заново
+        await self.connection.execute("CREATE TABLE IF NOT EXISTS sub_settings"
+                                      # Строка будет хранить сразу и период подписки и ID канала для этого варианта
+                                      "(chl_id_period VARCHAR(100) PRIMARY KEY ,"
+                                      "cost INT);")
 
-            # Таблица с настройками подписок. Что бы при перезапуске бота не настраивать заново
-            await self.connection.execute("CREATE TABLE IF NOT EXISTS sub_settings"
-                                          # Строка будет хранить сразу и период подписки и ID канала для этого варианта
-                                          "(chl_id_period VARCHAR(100) PRIMARY KEY ,"
-                                          "cost INT);")
+        # Таблица с информацией о работе очередей публикаций
+        await self.connection.execute("CREATE TABLE IF NOT EXISTS queue_info"
+                                      "(channel_id BIGINT PRIMARY KEY,"
+                                      "settings_info VARCHAR(155));")
 
-            # Таблица с информацией о работе очередей публикаций
-            await self.connection.execute("CREATE TABLE IF NOT EXISTS queue_info"
-                                          "(channel_id BIGINT PRIMARY KEY,"
-                                          "settings_info VARCHAR(155));")
-
-            # Таблица с настройками пользовательских сообщений
-            await self.connection.execute("CREATE TABLE IF NOT EXISTS users_mess"
-                                          "(mess_for VARCHAR(20) PRIMARY KEY,"
-                                          "mess_text TEXT)")
-
-        except PostgresSyntaxError as exc:
-            print()
-            exit('Ups!\n' + str(exc))
+        # Таблица с настройками пользовательских сообщений
+        await self.connection.execute("CREATE TABLE IF NOT EXISTS users_mess"
+                                      "(mess_for VARCHAR(20) PRIMARY KEY,"
+                                      "mess_text TEXT)")
 
     async def get_users_messages(self):
         """Метод выгружает сохраненные настройки пользовательских сообщений"""

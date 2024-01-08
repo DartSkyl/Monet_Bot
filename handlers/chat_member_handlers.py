@@ -4,7 +4,7 @@ from loader import channels_dict, bot, db, subscription_dict, users_mess_dict, a
 from utils import chat_member_router, SubManag
 from aiogram import F
 from aiogram.types import ChatMember
-from aiogram.filters import ChatMemberUpdatedFilter, IS_NOT_MEMBER, IS_MEMBER, ADMINISTRATOR, MEMBER
+from aiogram.filters import ChatMemberUpdatedFilter, IS_NOT_MEMBER, ADMINISTRATOR, MEMBER
 
 
 @chat_member_router.chat_member(F.chat.id.in_([channels_dict['is_paid']]),
@@ -17,7 +17,6 @@ async def new_member(chat_member: ChatMember):
         if subscription_dict[chat_member.chat.id][0] > 0:  # Проверяем, включена ли вообще пробная подписка
             # Проверяем выдавалась ли пробная подписка пользователю в этом канале
             did_receive = await db.check_user_in_trail(user_id=chat_member.from_user.id, channel_id=chat_member.chat.id)
-            print(did_receive)
             if not did_receive:
                 await SubManag.add_user_trail_sub(user_id=chat_member.from_user.id, channel_id=chat_member.chat.id)
                 await bot.send_message(chat_id=chat_member.from_user.id,

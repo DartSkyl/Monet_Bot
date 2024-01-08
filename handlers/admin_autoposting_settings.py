@@ -193,7 +193,7 @@ async def start_or_pause_queue(msg: Message, state: FSMContext):
 
 
 @admin_router.callback_query(AutoPost.queue_switch, SwitchQueue.filter())
-async def switching_queue(callback: CallbackQuery, callback_data: SwitchQueue, state: FSMContext):
+async def switching_queue(callback: CallbackQuery, callback_data: SwitchQueue):
     """Здесь очередь публикации переключается"""
     await dict_queue[callback_data.channel_id].switch_for_queue()  # Переключаем
 
@@ -203,4 +203,3 @@ async def switching_queue(callback: CallbackQuery, callback_data: SwitchQueue, s
         msg_text += (f'<b>{html.quote(channel["channel_name"])}:</b>   '
                      f'{await dict_queue[channel["channel_id"]].get_queue_status()}\n')
     await callback.message.edit_text(text=msg_text, reply_markup=await switch_keyboard())
-

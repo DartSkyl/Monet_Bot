@@ -1,8 +1,8 @@
-from loader import bot, channels_dict, subscription_dict, db
+from loader import bot, subscription_dict, db
 from utils import admin_router, SubManag
 from states import SubscriptionManagement as SM
 from keyboards import (
-    cancel_button, main_admin_keyboard,
+    cancel_button,
     sub_manag, del_board, SubDel,
     add_sub_keyboard, AddSubForUser,
     add_sub_channel_keyboard, SubAddForChannel)
@@ -10,12 +10,6 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from aiogram.exceptions import TelegramBadRequest
 from aiogram import F, html
-
-
-@admin_router.message(F.text == '2')
-async def test2(msg):
-    result = await bot.get_chat(-1001513097504)
-    print(result.invite_link)
 
 
 @admin_router.message(F.text == '⚙️ Посмотреть/удалить установленные подписки')
@@ -71,8 +65,6 @@ async def set_paid_sub_step_1(msg: Message, state: FSMContext) -> None:
     """Хэндлер запускает стэйт добавления варианта платной подписки"""
     m_text = ('Введите желаемый срок подписки и стоимость через пробел\n'
               '<i><b>Пример:</b></i> подписка на 30 дней стоимостью 100 рублей - "30 100" <b>без кавычек!</b>')
-    # m_text = 'Выберете канал для добавления подписки:'
-    # sub_keyboard = await add_sub_channel_keyboard()
     await msg.answer(text=m_text, reply_markup=cancel_button)
     await state.set_state(SM.set_paid_sub)
 

@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import handlers  # noqa
 from loader import dp, db_connect, bot, admin_list_load, channels_load, sub_settings_load, load_user_messages
 from utils import admin_router, chat_member_router, users_router, create_publish_queue
@@ -20,12 +21,14 @@ async def start_up():
     await sub_settings_load()
     # Загружаем пользовательские сообщения
     await load_user_messages()
-    #  Пропускаем скопившиеся апдэйты
+    # Пропускаем скопившиеся апдэйты
     await bot.delete_webhook(drop_pending_updates=True)
+    # Запускаем проверку подписок
     await check_subscription()
     await create_publish_queue()
     # Стартуем! Я начну стрелять!
-    print('Bot is work!')
+    with open('bot.log', 'a') as log_file:
+        log_file.write(f'\n========== New bot session {datetime.datetime.now()} ==========\n\n')
     await dp.start_polling(bot)
 
 
