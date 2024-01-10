@@ -30,8 +30,7 @@ class BotBase:
         # Таблица с юзерами, которым была выдана пробная подписка
         await self.connection.execute("CREATE TABLE IF NOT EXISTS trail_subscription"
                                       "(user_id BIGINT,"
-                                      "channel_id BIGINT,"
-                                      "data_activate INT);")
+                                      "channel_id BIGINT);")
 
         # Таблица с настройками подписок. Что бы при перезапуске бота не настраивать заново
         await self.connection.execute("CREATE TABLE IF NOT EXISTS sub_settings"
@@ -49,6 +48,8 @@ class BotBase:
                                       "(mess_for VARCHAR(20) PRIMARY KEY,"
                                       "mess_text TEXT)")
 
+    # ========== Пользовательские сообщения ==========
+
     async def get_users_messages(self):
         """Метод выгружает сохраненные настройки пользовательских сообщений"""
         result = await self.connection.fetch("SELECT * FROM public.users_mess")
@@ -60,6 +61,71 @@ class BotBase:
                                       f"(mess_for, mess_text)"
                                       f"VALUES ('{mess_for}', '{mess_text}')"
                                       f"ON CONFLICT (mess_for) DO UPDATE SET mess_text = '{mess_text}';")
+
+    # ========== Статистика и ее методы ==========
+
+    async def create_table_for_statistic(self, channel_id: int):
+        """Метод создает таблицу со статистикой для канала"""
+        await self.connection.execute(f"CREATE TABLE IF NOT EXISTS stat{abs(channel_id)}"
+                                      f"(reporting_day DATE PRIMARY KEY,"
+                                      f"money_received INT DEFAULT 0,"
+                                      f"is_member INT DEFAULT 0,"
+                                      f"trail_sub INT DEFAULT 0,"
+                                      f"left_channel INT DEFAULT 0);")
+
+    async def delete_table_for_statistic(self, channel_id: int):
+        """Метод удаления таблицы со статистикой канала"""
+        await self.connection.execute(f"DROP TABLE public.stat{abs(channel_id)};")
+
+    async def add_revenue(self, channel_id: int, date_today: str, revenue: int):
+        """Метод плюсует выручку канала за текущую дату"""
+        await self.connection.execute(f"INSERT INTO public.stat{abs(channel_id)} AS s{abs(channel_id)}"
+                                      f"(reporting_day, money_received)"
+                                      f"VALUES ('{date_today}', {revenue})"
+                                      f"ON CONFLICT (reporting_day)"
+                                      f"DO UPDATE SET money_received = s{abs(channel_id)}.money_received + {revenue};")
+
+    async def new_member(self, channel_id: int, date_today: str):
+        """Метод плюсует нового подписчика"""
+        await self.connection.execute(f"INSERT INTO public.stat{abs(channel_id)} AS s{abs(channel_id)}"
+                                      f"(reporting_day, is_member)"
+                                      f"VALUES ('{date_today}', 1)"
+                                      f"ON CONFLICT (reporting_day)"
+                                      f"DO UPDATE SET is_member = s{abs(channel_id)}.is_member + 1;")
+
+    async def count_trail_subscription(self, channel_id: int, date_today: str):
+        """Метод считает выданные пробные подписки"""
+        await self.connection.execute(f"INSERT INTO public.stat{abs(channel_id)} AS s{abs(channel_id)}"
+                                      f"(reporting_day, is_member, trail_sub)"
+                                      f"VALUES ('{date_today}', 1, 1)"
+                                      f"ON CONFLICT (reporting_day)"
+                                      f"DO UPDATE SET is_member = s{abs(channel_id)}.is_member + 1,"
+                                      f"trail_sub = s{abs(channel_id)}.trail_sub + 1;")
+
+    async def count_out_of_channel(self, channel_id: int, date_today: str):
+        """Метод считает тех, кто отписался от канала"""
+        await self.connection.execute(f"INSERT INTO public.stat{abs(channel_id)} AS s{abs(channel_id)}"
+                                      f"(reporting_day, left_channel)"
+                                      f"VALUES ('{date_today}', 1)"
+                                      f"ON CONFLICT (reporting_day)"
+                                      f"DO UPDATE SET left_channel = s{abs(channel_id)}.left_channel + 1;")
+
+    async def get_statistic_data(self, channel_id: int, first_date: str, second_date: str) -> List[Record]:
+        """Метод возвращает выборку по заданным датам"""
+        result = await self.connection.fetch(f"SELECT * FROM public.stat{abs(channel_id)} WHERE reporting_day "
+                                             f"BETWEEN '{first_date}' AND '{second_date}'")
+        return result
+
+    async def get_statistic_for_all_period(self, channel_id: int) -> List[Record]:
+        """Метод возвращает статистику канала за весь период"""
+        result = await self.connection.fetch(f"SELECT * FROM public.stat{abs(channel_id)}")
+        return result
+
+    async def get_today_statistic(self, channel_id: int, date_today: str) -> List[Record]:
+        """Метод возвращает статистику за текущий день"""
+        result = await self.connection.fetch(f"SELECT * FROM public.stat{abs(channel_id)} "
+                                             f"WHERE reporting_day = '{date_today}'")
+        return result
 
     # ========== Методы управления каналами ==========
 

@@ -1,6 +1,6 @@
 from .admins_states import (GroupManagementStates,
                             SubscriptionManagement, AutoPost, AddingPost,
-                            UsersMessages)
+                            UsersMessages, ViewStatistic)
 
 from .users_sate import UserPayment, CommunicationAdministration
 
@@ -12,6 +12,7 @@ __all__ = (
     "AutoPost",
     "AddingPost",
     "UsersMessages",
+    "ViewStatistic",
 
     # Стэйты подписчиков
     "UserPayment",

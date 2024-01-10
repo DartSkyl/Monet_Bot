@@ -44,3 +44,10 @@ class UsersMessages(StatesGroup):
     edit_mess = State()
     edit_channel_mess = State()
     set_admin_contact = State()
+
+
+class ViewStatistic(StatesGroup):
+    """Класс стэйтов для показа статистики"""
+    begin = State()
+    set_period = State()
+    set_user_date = State()

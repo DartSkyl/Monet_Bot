@@ -63,7 +63,7 @@ async def get_channels_list(msg: Message) -> None:
     await msg.answer(text=msg_ch_list)
 
 
-@admin_router.message(F.text.in_({'➕ Добавить открытый канал', '➕➕ Добавить закрытый канал'}))
+@admin_router.message(F.text.in_({'➕ Добавить открытый канал', '➕➕ Добавить платный канал'}))
 async def free_channel_add(msg: Message, state: FSMContext):
     """Хэндлер добавления каналов в БД"""
 
@@ -101,9 +101,14 @@ async def adding_free_ch(msg: Message, state: FSMContext):
             # И сразу создадим для канала отдельную таблицу,
             # что бы контролировать подписки пользователей
             await db.add_channel_table(int(msg.text))
+            # И для статистики
+            await db.create_table_for_statistic(int(msg.text))
+            # А так же очередь публикаций
             await add_queue(int(msg.text))
         else:
             channels_dict['free'].append(added_ch.id)
+            # А здесь только таблица для статистики и очередь публикаций
+            await db.create_table_for_statistic(int(msg.text))
             await add_queue(int(msg.text))
 
         reply_msg_text = ("Канал добавлен!\n"
@@ -153,6 +158,7 @@ async def delete_channel(msg: Message, state: FSMContext) -> None:
                 await db.delete_channel_table(int(msg.text))
                 await SubManag.clear_channel_subscription(int(msg.text))
             await delete_queue(int(msg.text))
+            await db.delete_table_for_statistic(int(msg.text))
         else:
             raise ValueError
 

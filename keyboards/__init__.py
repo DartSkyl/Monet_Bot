@@ -7,7 +7,8 @@ from .Inline_keyboard.inline_for_admins import (
     AddingPublication, publication_type,
     view_publications_list, return_to_queue,
     deletion_confirmation, SwitchQueue, switch_keyboard,
-    users_system_messages, redactor_for_message, channels_messages_markup)
+    users_system_messages, redactor_for_message, channels_messages_markup,
+    stat_period_markup, back_button)
 
 from .Inline_keyboard.inline_for_users import (
     channels_selection, view_description, ChannelsSelection,
@@ -57,6 +58,8 @@ __all__ = (
     "redactor_for_message",
     "users_msg_markup",
     "channels_messages_markup",
+    "stat_period_markup",
+    "back_button",
 
     # пользовательские клавиатуры
 

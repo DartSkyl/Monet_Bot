@@ -216,7 +216,7 @@ async def redactor_for_message():
 
 
 async def channels_messages_markup():
-    """Клавиатура для канала, которому настраивают описание"""
+    """Клавиатура для выбора канала, которому настраивают описание"""
     channels_keyboard = InlineKeyboardBuilder()
     channels_list = await db.get_channel_list()
     for channel in channels_list:
@@ -227,3 +227,22 @@ async def channels_messages_markup():
     channels_keyboard.button(text='🚫 Отмена', callback_data='cancel')
     channels_keyboard.adjust(1)
     return channels_keyboard.as_markup(resize_keyboard=True)
+
+
+async def stat_period_markup():
+    """Клавиатура для выбора временного периода для просмотра статистики"""
+    buttons = [
+        [InlineKeyboardButton(text='📆 За сегодня', callback_data='today')],
+        [InlineKeyboardButton(text='📆 За прошедшие 7 дней', callback_data='week')],
+        [InlineKeyboardButton(text='📆 За прошедшие 30 дней', callback_data='month')],
+        [InlineKeyboardButton(text='📆 За весь период', callback_data='all_days')],
+        [InlineKeyboardButton(text='⌨️ Свой промежуток', callback_data='user_date')],
+        [InlineKeyboardButton(text='⬅️ Назад', callback_data='go_back')]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
+
+def back_button():
+    """Кнопка назад"""
+    button = [[InlineKeyboardButton(text='⬅️ Назад', callback_data='back')]]
+    return InlineKeyboardMarkup(inline_keyboard=button)

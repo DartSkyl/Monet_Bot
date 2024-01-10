@@ -1,4 +1,5 @@
 import time
+from datetime import date
 from loader import bot, db, channels_dict, subscription_dict, users_mess_dict
 from aiogram.exceptions import TelegramBadRequest
 
@@ -17,7 +18,7 @@ async def cycle_controlling_subscriptions() -> None:
             # Смотрим, через сколько заканчивается подписка
             subscription = int(user['end_of_subscription']) - int(time.time())
 
-            if 82800 > subscription > 86400:
+            if 82800 > subscription > 86400:  # За сутки до окончания предупреждаем об этом
                 await bot.send_message(text=users_mess_dict['sub_end'], chat_id=user['user_id'])
 
             elif subscription <= 0:
@@ -28,6 +29,7 @@ async def cycle_controlling_subscriptions() -> None:
                                               until_date=(int(time.time()) + 60))
                     await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
                     await bot.send_message(chat_id=user['user_id'], text=users_mess_dict['sub_stop'])
+                    await db.count_out_of_channel(channel_id=ch_id, date_today=str(date.today()))
                     # На случай, если пользователя с таким ID больше не существует
                 except TelegramBadRequest as exc:
                     pass

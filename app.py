@@ -22,13 +22,15 @@ async def start_up():
     # Загружаем пользовательские сообщения
     await load_user_messages()
     # Пропускаем скопившиеся апдэйты
-    await bot.delete_webhook(drop_pending_updates=True)
+    # await bot.delete_webhook(drop_pending_updates=True)
     # Запускаем проверку подписок
     await check_subscription()
+    # Создаем очереди публикаций
     await create_publish_queue()
     # Стартуем! Я начну стрелять!
     with open('bot.log', 'a') as log_file:
         log_file.write(f'\n========== New bot session {datetime.datetime.now()} ==========\n\n')
+    print('Стартуем')
     await dp.start_polling(bot)
 
 
@@ -36,4 +38,4 @@ if __name__ == '__main__':
     try:
         asyncio.run(start_up())
     except KeyboardInterrupt:
-        print('Bot stopped')
+        print('Хорош, бро')

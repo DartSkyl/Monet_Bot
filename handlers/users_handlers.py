@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from config_data.config import PAYMENT_TOKEN
 from loader import users_mess_dict, bot, db, subscription_dict, admins_id
 from states import UserPayment, CommunicationAdministration
@@ -106,7 +106,7 @@ async def formation_of_payment(callback: CallbackQuery, callback_data: Subscript
             amount=(callback_data.cost * 100))],
         start_parameter='Go',
         request_timeout=15)
-    await state.update_data({'period': callback_data.period})
+    await state.update_data({'period': callback_data.period, 'cost': callback_data.cost})
     await state.set_state(UserPayment.payment)  # На всякий случай зададим стэйт
 
 
@@ -127,6 +127,13 @@ async def test_payment(msg: Message, state: FSMContext):
         user_id=msg.from_user.id,
         channel_id=sub_info['channel_id'],
         period=sub_info['period']
+    )
+
+    # Отправляем в бухгалтерию
+    await db.add_revenue(
+        channel_id=sub_info['channel_id'],
+        date_today=str(date.today()),
+        revenue=int(sub_info['cost'])
     )
 
     msg_text = (f'Подписка для канала <i><b>{html.quote(sub_info["channel_name"])}</b></i>\n'
