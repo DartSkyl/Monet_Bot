@@ -1,4 +1,4 @@
-./env
+./.env
 venv/
 venv_2/
 *.log
