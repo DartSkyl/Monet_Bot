@@ -160,7 +160,6 @@ async def add_sub_user(callback: CallbackQuery, callback_data: AddSubForUser, st
 async def add_subscription_2(msg: Message, state: FSMContext):
     """Хэндлер завершает добавление подписки пользователю в ручную"""
     sub_info = await state.get_data()
-    print(sub_info)
     await SubManag.add_user_paid_sub(
         user_id=sub_info['uid'],
         channel_id=sub_info['ch_id'],
