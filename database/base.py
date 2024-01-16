@@ -168,8 +168,8 @@ class BotBase:
         Уникальных ключей в таблице нет."""
 
         await self.connection.execute("INSERT INTO public.trail_subscription"
-                                      "(user_id, channel_id, data_activate)"
-                                      f"VALUES ({user_id}, {channel_id}, {int(time.time())});")
+                                      "(user_id, channel_id)"
+                                      f"VALUES ({user_id}, {channel_id};")
 
     async def check_user_in_trail(self, user_id: int, channel_id: int) -> bool:
         """Данный метод проверяет, есть такое сочетание ID пользователя и ID канала,
