@@ -9,7 +9,7 @@ from aiogram.filters.callback_data import CallbackData
 class SubAddForChannel(CallbackData, prefix='sub'):
     """Класс коллбэков для добавления варианта подписки на канал"""
     chn_id: str
-    chn_name: str
+    # chn_name: str
 
 
 class SubDel(CallbackData, prefix='subdel'):
@@ -21,13 +21,13 @@ class SubDel(CallbackData, prefix='subdel'):
 class AddSubForUser(CallbackData, prefix='addsub'):
     """Класс коллбэков для добавления подписки пользователю вручную"""
     chl_id: int
-    chl_name: str
+    # chl_name: str
 
 
 class QueueSelection(CallbackData, prefix='queue'):
     """Класс коллбэков для выбора очереди публикаций"""
     chnl_id: int
-    chnl_name: str
+    # chnl_name: str
 
 
 class TriggerSettings(CallbackData, prefix='trigger'):
@@ -46,7 +46,7 @@ class AddingPublication(CallbackData, prefix='add_post'):
 class SwitchQueue(CallbackData, prefix='switch'):
     """Класс вкл/выкл очередей публикаций"""
     channel_id: int
-    channel_name: str
+    # channel_name: str
 
 
 # ========== Сами клавиатуры ==========
@@ -78,7 +78,9 @@ async def add_sub_channel_keyboard():
     for channel in paid_channels:
         sub_channel_keyboard.button(text=channel['channel_name'],
                                     callback_data=SubAddForChannel(chn_id=str(channel['channel_id']),
-                                                                   chn_name=str(channel['channel_name'])))
+                                                                   # chn_name=str(channel['channel_name'])
+                                                                   )
+                                    )
     sub_channel_keyboard.adjust(1)
     return sub_channel_keyboard.as_markup(resize_keyboard=True)
 
@@ -87,10 +89,14 @@ async def add_sub_keyboard():
     """Функция возвращает клавиатуру для добавления подписки пользователю в ручную.
     Клавиатура со списком доступных каналов для добавления подписки (т.е. закрытых, channels_dict['is_paid'])"""
     add_sub_board = InlineKeyboardBuilder()
-    for ch_id in channels_dict['is_paid']:
-        chl_info = await bot.get_chat(chat_id=ch_id)
-        add_sub_board.button(text=str(chl_info.title),
-                             callback_data=AddSubForUser(chl_id=ch_id, chl_name=chl_info.title))
+    paid_channels = await db.get_paid_channels_list()
+    for channel in paid_channels:
+        # chl_info = await bot.get_chat(chat_id=ch_id)
+        add_sub_board.button(text=channel['channel_name'],
+                             callback_data=AddSubForUser(chl_id=str(channel['channel_id']),
+                                                         # chl_name=chl_info.title
+                                                         )
+                             )
     add_sub_board.adjust(1)
     return add_sub_board.as_markup(resize_keyboard=True)
 
@@ -103,7 +109,8 @@ async def queue_selection_keyboard():
         queues_keyboard.button(text=channel['channel_name'],
                                callback_data=QueueSelection(
                                    chnl_id=channel['channel_id'],
-                                   chnl_name=channel['channel_name']))
+                                   # chnl_name=channel['channel_name']
+                               ))
     queues_keyboard.adjust(1)
     return queues_keyboard.as_markup(resize_keyboard=True)
 
@@ -186,7 +193,8 @@ async def switch_keyboard():
         queues_keyboard.button(text=f"Переключить {channel['channel_name']}",
                                callback_data=SwitchQueue(
                                    channel_id=channel['channel_id'],
-                                   channel_name=channel['channel_name']))
+                                   # channel_name=channel['channel_name']
+                               ))
     queues_keyboard.adjust(1)
     return queues_keyboard.as_markup(resize_keyboard=True)
 
@@ -223,7 +231,8 @@ async def channels_messages_markup():
         channels_keyboard.button(text=channel['channel_name'],
                                  callback_data=QueueSelection(
                                      chnl_id=channel['channel_id'],
-                                     chnl_name=channel['channel_name']))
+                                     # chnl_name=channel['channel_name']
+                                 ))
     channels_keyboard.button(text='🚫 Отмена', callback_data='cancel')
     channels_keyboard.adjust(1)
     return channels_keyboard.as_markup(resize_keyboard=True)

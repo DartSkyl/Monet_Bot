@@ -32,9 +32,11 @@ async def looking_channels(msg: Message):
 @users_router.callback_query(ChannelsSelection.filter())
 async def view_description_and_go_to_channel(callback: CallbackQuery, callback_data: ChannelsSelection):
     """Здесь показываем описание и предлагаем перейти в канал или вернуться назад к списку каналов"""
-    channel_url = (await bot.get_chat(callback_data.channel_id)).invite_link  # Ссылка на канал
+    channel = await bot.get_chat(callback_data.channel_id)
+    channel_url = channel.invite_link  # Ссылка на канал
+    channel_name = channel.title
 
-    msg_text = f'Описание канала <i><b>{html.quote(callback_data.channel_name)}</b></i>:\n'
+    msg_text = f'Описание канала <i><b>{html.quote(channel_name)}</b></i>:\n'
     msg_text += '<i>- Отсутствует -</i>' if not users_mess_dict.get(str(callback_data.channel_id)) \
         else html.quote(users_mess_dict[str(callback_data.channel_id)])
 
@@ -80,9 +82,10 @@ async def start_pay_for_subscription(msg: Message, state: FSMContext):
 async def select_subscription(callback: CallbackQuery, callback_data: ChannelsForPayment, state: FSMContext):
     """После выбора канал даем на выбор варианты подписок данного канала"""
     # Сразу сохраним выбор пользователя
-    await state.set_data({'channel_id': callback_data.channel_id, 'channel_name': callback_data.channel_name})
+    channel_name = (await bot.get_chat(callback_data.channel_id)).title
+    await state.set_data({'channel_id': callback_data.channel_id, 'channel_name': channel_name})
     await callback.message.delete()
-    msg_text = f'Канал: <b>{html.quote(callback_data.channel_name)}</b>\nВыберете вариант подписки:'
+    msg_text = f'Канал: <b>{html.quote(channel_name)}</b>\nВыберете вариант подписки:'
     await callback.message.answer(text=msg_text,
                                   reply_markup=await subscription_keyboard(subscription_dict[callback_data.channel_id]))
     await state.set_state(UserPayment.choice_period)

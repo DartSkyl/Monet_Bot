@@ -86,13 +86,14 @@ async def set_paid_sub_step_2(msg: Message, state: FSMContext) -> None:
 async def set_paid_sub_step_3(callback: CallbackQuery, callback_data: SubAddForChannel, state: FSMContext) -> None:
     """Хэндлер завершает добавление платного варианта подписки"""
     sub_set = await state.get_data()
+    channel_name = (await bot.get_chat(int(callback_data.chn_id))).title
     await SubManag.set_paid_subscription(
         channel_id=int(callback_data.chn_id),
         period=sub_set['sub_info'][0],
         cost=sub_set['sub_info'][1]
     )
     await callback.answer()
-    ans_text = (f'Подписка на канал <i><b>{html.quote(callback_data.chn_name)}</b></i>\n'
+    ans_text = (f'Подписка на канал <i><b>{html.quote(channel_name)}</b></i>\n'
                 f'стоимостью <i><b>{sub_set["sub_info"][1]} рублей</b></i> \n'
                 f'сроком на <i><b>{sub_set["sub_info"][0]}</b></i> дня/дней добавлена!')
     await callback.message.answer(text=ans_text, reply_markup=sub_manag)
@@ -120,11 +121,12 @@ async def set_trail_subscription_period(msg: Message, state: FSMContext) -> None
 async def end_add_trail_sub(callback: CallbackQuery, callback_data: SubAddForChannel, state: FSMContext) -> None:
     """Хэндлер завершает настройку пробной подписки"""
     trail_period = await state.get_data()
+    channel_name = (await bot.get_chat(int(callback_data.chn_id))).title
     await SubManag.trail_sub_period(period=trail_period['trail'], chn_id=int(callback_data.chn_id))
     await callback.answer()
     ans_text = (
-        f'Пробная подписка <i><b>{html.quote(callback_data.chn_name)}</b></i> обновлена' if trail_period['trail'] > 0
-        else f'Пробная подписка <i><b>{html.quote(callback_data.chn_name)}</b></i> отключена')
+        f'Пробная подписка <i><b>{html.quote(channel_name)}</b></i> обновлена' if trail_period['trail'] > 0
+        else f'Пробная подписка <i><b>{html.quote(channel_name)}</b></i> отключена')
     await state.clear()
     await callback.message.answer(text=ans_text, reply_markup=sub_manag)
 
@@ -151,8 +153,9 @@ async def add_subscription_1(msg: Message, state: FSMContext, reply=None):
 @admin_router.callback_query(AddSubForUser.filter(), SM.add_subscription_a_user)
 async def add_sub_user(callback: CallbackQuery, callback_data: AddSubForUser, state: FSMContext) -> None:
     """Хэндлер добавления подписки пользователя в ручную. Ловит канал и активирует ввод периода."""
+    channel_name = (await bot.get_chat(callback_data.chl_id)).title
     await state.update_data({'ch_id': callback_data.chl_id})
-    await state.update_data({'ch_name': callback_data.chl_name})
+    await state.update_data({'ch_name': channel_name})
     await callback.message.answer(text='Введите сколько дней добавить к подписке:', reply_markup=cancel_button)
 
 
@@ -167,7 +170,7 @@ async def add_subscription_2(msg: Message, state: FSMContext):
     )
     # На всякий случай разбаним, а то автоматический разбаниватель не всегда работает
     await bot.unban_chat_member(chat_id=sub_info['ch_id'], user_id=sub_info['uid'])
-    ans_text = (f'Подписка пользователю {sub_info["uid"]} на канал {html.quote(sub_info["ch_name"])} '
+    ans_text = (f'Подписка пользователю {sub_info["uid"]}\nна канал <b>{html.quote(sub_info["ch_name"])}</b>\n'
                 f'сроком на {msg.text} дня(дней) добавлена')
     await msg.answer(text=ans_text, reply_markup=sub_manag)
     await state.clear()

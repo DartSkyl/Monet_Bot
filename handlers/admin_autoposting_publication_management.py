@@ -1,4 +1,5 @@
 import asyncio
+from loader import bot
 from utils import admin_router, dict_queue
 from states import AddingPost
 from keyboards import (cancel_button, auto_posting,
@@ -22,10 +23,11 @@ async def start_adding_publication(msg: Message, state: FSMContext):
 async def adding_publication_choice_type(callback: CallbackQuery, callback_data: QueueSelection, state: FSMContext):
     """Здесь происходит выбор типа добавляемой публикации"""
     await callback.answer()
-    msg_text = (f'Выбрана очередь публикаций <i><b>{html.quote(callback_data.chnl_name)}</b></i>\n'
+    channel_name = (await bot.get_chat(callback_data.chnl_id)).title
+    msg_text = (f'Выбрана очередь публикаций <i><b>{html.quote(channel_name)}</b></i>\n'
                 f'Выберете тип добавляемой публикации:')
     await callback.message.edit_text(text=msg_text, reply_markup=await publication_type())
-    await state.set_data({'channel_id': callback_data.chnl_id, 'channel_name': callback_data.chnl_name})
+    await state.set_data({'channel_id': callback_data.chnl_id, 'channel_name': channel_name})
     await state.set_state(AddingPost.step_two)
 
 

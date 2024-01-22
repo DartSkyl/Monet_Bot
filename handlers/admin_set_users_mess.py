@@ -1,4 +1,4 @@
-from loader import users_mess_dict, db
+from loader import users_mess_dict, db, bot
 from utils import admin_router
 from states import UsersMessages
 from keyboards import (redactor_for_message, users_system_messages,
@@ -65,9 +65,10 @@ async def edit_users_message(callback: CallbackQuery, state: FSMContext):
 async def get_channels_mess(callback: CallbackQuery, callback_data: QueueSelection, state: FSMContext):
     """Здесь происходит вывод установленного описания канала"""
     await callback.message.delete()
-    await state.set_data({'message': str(callback_data.chnl_id)})  # Сразу сохраним выбор пользователя
+    channel_name = (await bot.get_chat(callback_data.chnl_id)).title
+    await state.set_data({'message': str(callback_data.chnl_id)})  # Это будет ключ для сообщения в словаре
 
-    msg_text = f'Описание для канала: <b>{html.quote(callback_data.chnl_name)}</b>\n'
+    msg_text = f'Описание для канала: <b>{html.quote(channel_name)}</b>\n'
     msg_text += '<i>Не установлено</i>' if not users_mess_dict.get(str(callback_data.chnl_id))\
         else users_mess_dict[str(callback_data.chnl_id)]  # Если у ключа есть значение, то его и вставим
 
@@ -106,7 +107,7 @@ async def set_message(msg: Message, state: FSMContext):
 
 @admin_router.message(UsersMessages.edit_mess)
 async def set_message(msg: Message, state: FSMContext):
-    """Здесь измененное сообщение сохраняется"""
+    """Здесь измененное системное сообщение сохраняется"""
     edit_mess = (await state.get_data())['message']  # Берем заранее сохраненный ключ выбранного сообщения
     users_mess_dict[edit_mess] = msg.text
     await db.set_users_messages(mess_for=edit_mess, mess_text=msg.text)

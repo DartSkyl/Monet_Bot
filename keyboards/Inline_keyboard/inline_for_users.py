@@ -6,13 +6,13 @@ from aiogram.filters.callback_data import CallbackData
 class ChannelsSelection(CallbackData, prefix='chnls'):
     """Коллбэк для выбора канала подписчиком"""
     channel_id: int
-    channel_name: str
+    # channel_name: str
 
 
 class ChannelsForPayment(CallbackData, prefix='pay'):
     """Коллбэк для выбора канала подписчиком"""
     channel_id: int
-    channel_name: str
+    # channel_name: str
 
 
 class SubscriptionSelection(CallbackData, prefix='sub'):
@@ -29,7 +29,7 @@ async def channels_selection():
         channels_selection_markup.button(text=channel['channel_name'],
                                          callback_data=ChannelsSelection(
                                              channel_id=channel['channel_id'],
-                                             channel_name=channel['channel_name']
+                                             # channel_name=channel['channel_name']
                                          ))
     channels_selection_markup.button(text='🚫 Отмена', callback_data='cancel')
     channels_selection_markup.adjust(1)
@@ -37,14 +37,14 @@ async def channels_selection():
 
 
 async def channels_for_payment():
-    """Клавиатура для выбора доступных каналов"""
+    """Клавиатура для выбора доступных к оплате каналов"""
     channels_list = await db.get_paid_channels_list()
     channels_selection_markup = InlineKeyboardBuilder()
     for channel in channels_list:
         channels_selection_markup.button(text=channel['channel_name'],
                                          callback_data=ChannelsForPayment(
                                              channel_id=channel['channel_id'],
-                                             channel_name=channel['channel_name']
+                                             # channel_name=channel['channel_name']
                                          ))
     channels_selection_markup.button(text='🚫 Отмена', callback_data='cancel')
     channels_selection_markup.adjust(1)

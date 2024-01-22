@@ -1,5 +1,6 @@
 from utils import admin_router, dict_queue
 from states import AutoPost
+from loader import bot
 from keyboards import (auto_posting, queue_selection_keyboard,
                        QueueSelection, view_publications_list, return_to_queue,
                        deletion_confirmation, returning_button)
@@ -22,7 +23,8 @@ async def publish_queue(message: Message, state: FSMContext):
 async def start_demonstration_queue(callback: CallbackQuery, callback_data: QueueSelection, state: FSMContext):
     """Здесь стартует показ очереди публикаций"""
     await callback.answer()
-    msg_text = await dict_queue[callback_data.chnl_id].get_queue_info(callback_data.chnl_name)
+    channel_name = (await bot.get_chat(callback_data.chnl_id)).title
+    msg_text = await dict_queue[callback_data.chnl_id].get_queue_info(channel_name)
     await callback.message.answer(text=msg_text, reply_markup=returning_button)
     await callback.message.delete()
     try:

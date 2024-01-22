@@ -1,5 +1,5 @@
 from datetime import date, timedelta
-from loader import db
+from loader import db, bot
 from utils import admin_router
 from states import ViewStatistic
 from keyboards import (cancel_button,
@@ -47,7 +47,8 @@ async def start_view_statistic(msg: Message, state: FSMContext):
 async def choice_period_viewing(callback: CallbackQuery, callback_data: QueueSelection, state: FSMContext):
     """Хэндлер возвращает пользователю инлайн клавиатуру с выбором временного отрезка для просмотра статистики"""
     # Сразу сохраним выбор пользователя
-    await state.set_data({'channel_id': callback_data.chnl_id, 'channel_name': callback_data.chnl_name})
+    channel_name = (await bot.get_chat(callback_data.chnl_id)).title
+    await state.set_data({'channel_id': callback_data.chnl_id, 'channel_name': channel_name})
     await callback.message.delete()
     await callback.message.answer(text='Теперь выберете промежуток времени для просмотра:',
                                   reply_markup=await stat_period_markup())

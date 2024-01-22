@@ -1,4 +1,4 @@
-from loader import db
+from loader import db, bot
 from utils import admin_router, dict_queue
 from states import AutoPost
 from keyboards import (auto_posting, queue_selection_keyboard, tr_set_keyboard, cancel_button,
@@ -27,9 +27,10 @@ async def trigger_settings_step_one(callback: CallbackQuery, callback_data: Queu
     """После выбора канала для настройки очереди публикаций, дает на выбор основной принцип работы для очереди.
     Один из двух вариантов: по дням недели в определенное время и интервалами"""
     await callback.answer()
-    await state.set_data({'channel': (callback_data.chnl_id, callback_data.chnl_name)})
+    channel_name = (await bot.get_chat(callback_data.chnl_id)).title
+    await state.set_data({'channel': (callback_data.chnl_id, channel_name)})
     trigger_keyboard = await tr_set_keyboard(1)
-    msg_text = (f'Настройка очереди публикаций для канала <i><b>{html.quote(callback_data.chnl_name)}</b></i>\n'
+    msg_text = (f'Настройка очереди публикаций для канала <i><b>{html.quote(channel_name)}</b></i>\n'
                 '\nВыберете основной принцип по которому будет работать очередь публикаций:')
     await callback.message.edit_text(text=msg_text, reply_markup=trigger_keyboard)
     await state.set_state(AutoPost.set_trigger_step_two)
