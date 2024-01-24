@@ -55,8 +55,13 @@ async def new_member(chat_member: ChatMember):
 
 @chat_member_router.chat_member(ChatMemberUpdatedFilter(member_status_changed=IS_NOT_MEMBER << MEMBER))
 async def out_of_channel(chat_member: ChatMember):
-    """Хэндлер ловит тех, кто отписывается от любого из каналов и ругает их за это"""
-    await db.count_out_of_channel(channel_id=chat_member.chat.id, date_today=str(date.today()))
+    """Хэндлер ловит тех, кто отписывается, у кого закончилась подписка или кто пытается подписаться,
+    но из-за отсутствия подписки не может (на этот случай есть заглушка, что бы лишнее не считать)"""
+
+    # Так как данный хэндлер активируется при всех выше описанных случаях,
+    # немного оптимизируем его, что бы искажения статистики и других ошибок
+    if chat_member.new_chat_member.status != 'kicked':
+        await db.count_out_of_channel(channel_id=chat_member.chat.id, date_today=str(date.today()))
 
 
 @chat_member_router.chat_member(F.chat.id == MAIN_GROUP_ID,

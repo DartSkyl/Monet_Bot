@@ -21,7 +21,7 @@ async def start_up():
     await sub_settings_load()
     # Загружаем пользовательские сообщения
     await load_user_messages()
-    # Пропускаем скопившиеся апдэйты
+    # Пропускаем скопившиеся апдэйты - а надо ли?
     # await bot.delete_webhook(drop_pending_updates=True)
     # Запускаем проверку подписок
     await check_subscription()
@@ -31,7 +31,13 @@ async def start_up():
     with open('bot.log', 'a') as log_file:
         log_file.write(f'\n========== New bot session {datetime.datetime.now()} ==========\n\n')
     print('Стартуем')
-    await dp.start_polling(bot)
+    await dp.start_polling(bot,
+                           allowed_updates=[
+                               "message",
+                               "callback_query",
+                               "pre_checkout_query",
+                               "chat_member"
+                           ])
 
 
 if __name__ == '__main__':

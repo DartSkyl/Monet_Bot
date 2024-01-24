@@ -18,7 +18,7 @@ async def cycle_controlling_subscriptions() -> None:
             # Смотрим, через сколько заканчивается подписка
             subscription = int(user['end_of_subscription']) - int(time.time())
 
-            if 82800 > subscription > 86400:  # За сутки до окончания предупреждаем об этом
+            if 82800 < subscription < 86400:  # За сутки до окончания предупреждаем об этом
                 await bot.send_message(text=users_mess_dict['sub_end'], chat_id=user['user_id'])
 
             elif subscription <= 0:
