@@ -218,7 +218,7 @@ async def redactor_for_message():
     """Клавиатура для редактирования сообщений"""
     buttons = [
         [InlineKeyboardButton(text='📝 Редактировать сообщение', callback_data='edit')],
-        [InlineKeyboardButton(text='⬅️ Назад', callback_data='go_back')]
+        [InlineKeyboardButton(text='⬅️ Назад', callback_data='g_back')]
     ]
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 

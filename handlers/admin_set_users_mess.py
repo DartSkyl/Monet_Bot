@@ -30,14 +30,14 @@ async def channels_messages(msg: Message, state: FSMContext):
     await msg.answer(text='Описание какого канала будем настраивать?', reply_markup=await channels_messages_markup())
 
 
-@admin_router.callback_query(UsersMessages.set_system_mess, F.data == 'go_back')
+@admin_router.callback_query(UsersMessages.set_system_mess, F.data == 'g_back')
 async def back_to_system_messages(callback: CallbackQuery):
     """Здесь возврат к системным сообщениям"""
     await callback.message.delete()
     await callback.message.answer(text='Выберете сообщение:', reply_markup=await users_system_messages())
 
 
-@admin_router.callback_query(UsersMessages.set_channel_mess, F.data == 'go_back')
+@admin_router.callback_query(UsersMessages.set_channel_mess, F.data == 'g_back')
 async def back_to_channels_messages(callback: CallbackQuery):
     """Здесь возврат к описаниям каналов"""
     await callback.message.delete()

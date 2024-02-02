@@ -58,7 +58,7 @@ async def get_channels_list(msg: Message) -> None:
     msg_ch_list = ("Список каналов:\n"
                    "\nОткрытые:\n"
                    f"{fr_chn}"
-                   "\nЗакрытые:\n"
+                   "\nПлатные:\n"
                    f"{pd_chn}")
     await msg.answer(text=msg_ch_list)
 

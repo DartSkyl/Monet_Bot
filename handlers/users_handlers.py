@@ -151,7 +151,7 @@ async def test_payment(msg: Message, state: FSMContext):
 async def communication_with_the_administration(msg: Message, state: FSMContext):
     """Здесь происходит связь с администрацией"""
     # Если юзернэйм для связи с подписчиками установлен
-    if users_mess_dict['admin_username'] and users_mess_dict['admin_username'] != '@__None__':
+    if users_mess_dict['admin_username'] and users_mess_dict['admin_username'] != '@NoneNone':
         await msg.answer(text=f'Контакт для связи: {users_mess_dict["admin_username"]}')
 
     else:
