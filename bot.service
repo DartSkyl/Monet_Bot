@@ -1,0 +1,12 @@
+[Unit]
+Description=Bot
+After=postgresql.service
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/python3 /root/Monet_Bot-master/app.py
+OOMScoreAdjust=-1000
+
+[Install]
+WantedBy=multi-user.target
