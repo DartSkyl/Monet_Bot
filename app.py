@@ -21,8 +21,6 @@ async def start_up():
     await sub_settings_load()
     # Загружаем пользовательские сообщения
     await load_user_messages()
-    # Пропускаем скопившиеся апдэйты - а надо ли?
-    # await bot.delete_webhook(drop_pending_updates=True)
     # Запускаем проверку подписок
     await check_subscription()
     # Создаем очереди публикаций

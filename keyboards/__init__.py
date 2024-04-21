@@ -22,7 +22,8 @@ from .reply_keyboard.admin_keyboard import (
     auto_posting,
     cancel_button,
     cancel_button_2,
-    returning_button, users_msg_markup
+    returning_button, users_msg_markup,
+    only_text, only_file
 )
 from .reply_keyboard.user_keyboard import main_user_keyboard, user_cancel
 
@@ -60,6 +61,8 @@ __all__ = (
     "channels_messages_markup",
     "stat_period_markup",
     "back_button",
+    "only_text",
+    "only_file",
 
     # пользовательские клавиатуры
 

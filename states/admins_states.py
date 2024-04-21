@@ -23,17 +23,15 @@ class AutoPost(StatesGroup):
     set_trigger_interval = State()
     check_queue = State()
     view_publications = State()
+    file_demonstration = State()
     queue_switch = State()
 
 
 class AddingPost(StatesGroup):
     """Класс содержит стэйты для добавления постов в очередь публикаций"""
     step_one = State()
-    step_two = State()
     step_adding_text = State()
     step_adding_file = State()
-    step_three = State()  # ?
-    step_four = State()  # ?
     false_state = State()
 
 

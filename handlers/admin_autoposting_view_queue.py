@@ -1,8 +1,10 @@
+from aiogram.utils.media_group import MediaGroupBuilder
+
 from utils import admin_router, dict_queue
 from states import AutoPost
 from loader import bot
 from keyboards import (auto_posting, queue_selection_keyboard,
-                       QueueSelection, view_publications_list, return_to_queue,
+                       QueueSelection, view_publications_list,
                        deletion_confirmation, returning_button)
 
 from aiogram import F
@@ -104,27 +106,30 @@ async def queue_demonstration(callback: CallbackQuery, state: FSMContext):
 @admin_router.callback_query(AutoPost.view_publications, F.data == 'get_file')
 async def show_mediafile(callback: CallbackQuery, state: FSMContext):
     """Здесь происходит демонстрация медиафайла публикации, если таковой имеется"""
-    publication = (await state.get_data())['publication']
-
-    publication_file, publication_type = publication.get_file_id(), publication.get_type()
-
-    if publication_file:
-        await callback.message.delete()
-        if publication_type in ['pic', 'pic_text']:
-            await callback.message.answer_photo(photo=publication_file, reply_markup=await return_to_queue())
-        elif publication_type in ['video', 'video_text']:
-            await callback.message.answer_video(video=publication_file, reply_markup=await return_to_queue())
-        elif publication_type in ['file', 'file_text']:
-            await callback.message.answer_document(document=publication_file, reply_markup=await return_to_queue())
-        elif publication_type == 'video_note':
-            await callback.message.answer_video_note(video_note=publication_file, reply_markup=await return_to_queue())
+    publication_files = (await state.get_data())['publication'].get_file_id()
+    if publication_files:  # Если списка, значит объявление без медиафайлов
+        await callback.answer()
+        media_group = MediaGroupBuilder()
+        for mediafile in publication_files:
+            media_group.add(type=mediafile[1], media=mediafile[0])
+        await bot.send_media_group(chat_id=callback.from_user.id, media=media_group.build())
+        await state.set_state(AutoPost.file_demonstration)
     else:
         await callback.answer(text='Публикация не содержит медиафайла!')
 
 
+@admin_router.message(F.text == '⏪ Вернуться', AutoPost.file_demonstration)
+async def return_from_file_demonstration(msg: Message, state: FSMContext):
+    """Здесь мы возвращаемся из просмотра файлов"""
+    publication = (await state.get_data())['publication']
+    page = await state.get_data()
+    await state.set_state(AutoPost.view_publications)
+    await msg.answer(text=publication.get_info(), reply_markup=await view_publications_list(page))
+
+
 @admin_router.callback_query(AutoPost.view_publications, F.data == 'return')
 async def return_to_view_queue(callback: CallbackQuery, state: FSMContext):
-    """Здесь мы возвращаемся из просмотра медиафайла или при отмене удаления публикации к просмотру очереди"""
+    """Здесь мы возвращаемся при отмене удаления публикации к просмотру очереди"""
     await callback.message.delete()
     publication = (await state.get_data())['publication']
     page = await state.get_data()
@@ -132,7 +137,7 @@ async def return_to_view_queue(callback: CallbackQuery, state: FSMContext):
 
 
 @admin_router.callback_query(AutoPost.view_publications, F.data == 'start_delete')
-async def start_deleting_publication(callback: CallbackQuery, state: FSMContext):
+async def start_deleting_publication(callback: CallbackQuery):
     """Здесь пользователь подтверждает или отменяет удаление публикации"""
     await callback.message.delete()
     await callback.message.answer(text='‼️Подтвердите удаления публикации‼️',

@@ -2,7 +2,7 @@ import time
 from datetime import date
 from loader import bot, db, channels_dict, subscription_dict, users_mess_dict
 from aiogram.exceptions import TelegramBadRequest
-
+from aiogram import html
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -13,13 +13,15 @@ async def cycle_controlling_subscriptions() -> None:
     for ch_id in channels_dict['is_paid']:
         # Формируем список из пользователей и окончаний их подписки
         s_lst = await SubManag.check_subscription(channel_id=ch_id)
-
+        # Сохраним название канала, чтобы добавить его к сообщениям ниже
+        channel_name = (await bot.get_chat(ch_id)).title
+        msg_prefix = html.quote(f'{channel_name}\n===========\n\n')
         for user in s_lst:
             # Смотрим, через сколько заканчивается подписка
             subscription = int(user['end_of_subscription']) - int(time.time())
 
             if 82800 < subscription < 86400:  # За сутки до окончания предупреждаем об этом
-                await bot.send_message(text=users_mess_dict['sub_end'], chat_id=user['user_id'])
+                await bot.send_message(text=(msg_prefix + users_mess_dict['sub_end']), chat_id=user['user_id'])
 
             elif subscription <= 0:
                 try:
@@ -28,7 +30,7 @@ async def cycle_controlling_subscriptions() -> None:
                                               # подписки пользователь мог вернуться
                                               until_date=(int(time.time()) + 60))
                     await SubManag.delete_user(user_id=user['user_id'], channel_id=ch_id)
-                    await bot.send_message(chat_id=user['user_id'], text=users_mess_dict['sub_stop'])
+                    await bot.send_message(chat_id=user['user_id'], text=(msg_prefix + users_mess_dict['sub_stop']))
                     await db.count_out_of_channel(channel_id=ch_id, date_today=str(date.today()))
                     # На случай, если пользователя с таким ID больше не существует
                 except TelegramBadRequest as exc:

@@ -1,10 +1,11 @@
 import asyncio
+import re
 from loader import bot
 from utils import admin_router, dict_queue
 from states import AddingPost
 from keyboards import (cancel_button, auto_posting,
                        queue_selection_keyboard, QueueSelection,
-                       AddingPublication, publication_type)
+                       only_file, only_text)
 
 from aiogram import F, html
 from aiogram.types import Message, CallbackQuery
@@ -25,112 +26,121 @@ async def adding_publication_choice_type(callback: CallbackQuery, callback_data:
     await callback.answer()
     channel_name = (await bot.get_chat(callback_data.chnl_id)).title
     msg_text = (f'Выбрана очередь публикаций <i><b>{html.quote(channel_name)}</b></i>\n'
-                f'Выберете тип добавляемой публикации:')
-    await callback.message.edit_text(text=msg_text, reply_markup=await publication_type())
-    await state.set_data({'channel_id': callback_data.chnl_id, 'channel_name': channel_name})
-    await state.set_state(AddingPost.step_two)
+                f'Публикация может быть трех видов:\n'
+                f'- только текст (3000 символов)\n'
+                f'- текст (1024 символа) + файл(ы)(до 10 файлов)\n'
+                f'- только файл(ы)(до 10 файлов)\n\n'
+                f'Скиньте файл(ы) или нажмите кнопку <b>Дальше</b>')
+    await callback.message.answer(text=msg_text, reply_markup=only_text)
+    await state.set_data({'channel_id': callback_data.chnl_id, 'channel_name': channel_name, 'mediafile': []})
+    await state.set_state(AddingPost.step_adding_file)
 
 
-@admin_router.callback_query(AddingPublication.filter(), AddingPost.step_two)
-async def adding_publication_input(callback: CallbackQuery, callback_data: AddingPublication, state: FSMContext):
-    """Здесь происходит ввод содержимого будущей публикации"""
-    await callback.answer()
+@admin_router.message(AddingPost.step_adding_file, F.text != 'Дальше')
+async def adding_files(msg: Message, state: FSMContext):
+    """Здесь пользователь добавляет файл(ы) в будущую публикацию"""
 
-    if callback_data.publication_type in ['text',  'pic_text', 'video_text', 'file_text']:
-        msg_text = 'Введите текст будущей публикации:'
+    # Так как, при скидывании более одного файла, бот воспринимает это сразу как несколько отдельных
+    # сообщений, то будем использовать эту причудливую конструкцию с заранее созданным списком
 
-        await callback.message.edit_text(text=msg_text)
-        await state.update_data({'selected_type': callback_data.publication_type})
+    file_id_list = (await state.get_data())['mediafile']
+
+    if msg.photo:
+        file_id_list.append((msg.photo[-1].file_id, 'photo'))
+    elif msg.video:
+        file_id_list.append((msg.video.file_id, 'video'))
+    elif msg.document:
+        file_id_list.append((msg.document.file_id, 'document'))
+    elif msg.video_note:
+        file_id_list.append((msg.video_note.file_id, 'video_note'))
+
+    await state.update_data({'mediafile': file_id_list})
+
+
+@admin_router.message(AddingPost.step_adding_file, F.text == 'Дальше')
+async def check_file(msg: Message, state: FSMContext):
+    """Проверяем файлы, которые скинул пользователь. Если все нормально, то предлагаем ввести текст"""
+    file_id_list = (await state.get_data())['mediafile']
+
+    # Если файлов больше чем надо, то просим повторить
+    if 0 < len(file_id_list) <= 10:
+        type_set = {t[1] for t in file_id_list}
+
+        # Проверяем на однотипность добавленных файлов. Вперемешку могут быть только фото и видео(не видеосообщение)
+
+        if len(type_set) == 1:  # значит, что у передаваемых файлов один тип
+            await msg.answer(text='Теперь введите текст или нажмите кнопу Готово:', reply_markup=only_file)
+            await state.set_state(AddingPost.step_adding_text)
+            await state.update_data({'only_text': False})
+        elif len(type_set) == 2 and ('photo' and 'video' in type_set):
+            await msg.answer(text='Теперь введите текст или нажмите кнопу Готово:', reply_markup=only_file)
+            await state.set_state(AddingPost.step_adding_text)
+            await state.update_data({'only_text': False})
+        else:
+            await msg.answer(text='Файлы должны быть однотипными! Совместно можно только фото и видео!',
+                             reply_markup=only_text)
+            await state.update_data({'mediafile': []})
+
+    elif len(file_id_list) == 0:  # Значит только текст
         await state.set_state(AddingPost.step_adding_text)
+        await msg.answer(text='Введите текст', reply_markup=cancel_button)
+        await state.update_data({'only_text': True})
 
-    elif callback_data.publication_type in ['pic', 'video', 'video_note', 'file']:
-        msg_text = 'Загрузите файл будущей публикации:'
-
-        await callback.message.edit_text(text=msg_text)
-        await state.update_data({
-            'selected_type': callback_data.publication_type,
-            'text_for_post': 'empty'  # Эта заглушка нужна для конструкции ниже
-        })
-        await state.set_state(AddingPost.step_adding_file)
-
-    else:  # Если пользователь нажал "Отмена"
-        await state.clear()
-        await callback.message.answer(text='Действие отменено', reply_markup=auto_posting)
+    else:
+        await msg.answer(text='Фалов слишком много, повторите попытку', reply_markup=only_text)
+        await state.update_data({'mediafile': []})
 
 
-@admin_router.message(AddingPost.step_adding_text, F.text)
+@admin_router.message(AddingPost.step_adding_text, F.text != '🚫 Отмена')
 async def adding_publication_get_text(msg: Message, state: FSMContext):
     """Здесь пользователь вводит текст для будущей публикации"""
-    content_type = (await state.get_data())['selected_type']
-    if content_type == 'text':
-        if len(msg.text) <= 3000:
-            channel_queue_id = (await state.get_data())['channel_id']
-            msg_text = f'Публикация добавлена в очередь <i><b>{html.quote((await state.get_data())["channel_name"])}</b></i>'
-            await dict_queue[channel_queue_id].adding_publication_in_queue(content_type=content_type, text=msg.text)
-            await msg.answer(text=msg_text, reply_markup=auto_posting)
-            await state.clear()
-        else:
-            await state.set_state(AddingPost.false_state)  # Это нужно для того, что бы когда телеграмм разобьет
-            # сообщение на две части не пропустить второе
-
-            await msg.answer(text=f'Ограничение для одного сообщения 3000 символов (Вы ввели {len(msg.text)} символа)',
-                             reply_markup=cancel_button)
-
-            await asyncio.sleep(1)
-            await state.set_state(AddingPost.step_adding_text)  # И сразу установим стэйт обратно,
-            # что бы пользователь мог повторить ввод текста для публикации
+    if '<' in msg.text:
+        await msg.answer(text=html.quote('Использование символа "<" в тексте нельзя, так как это нарушит работу бота!'))
     else:
-        if len(msg.text) <= 1024:
-            await state.update_data({'text_for_post': msg.text})
-            await state.set_state(AddingPost.step_adding_file)
-            await msg.answer(text='Теперь скиньте файл', reply_markup=cancel_button)
+
+        post_info = await state.get_data()
+        channel_queue_id = post_info['channel_id']
+        channel_queue_name = post_info['channel_name']
+        msg_text = f'Публикация добавлена в очередь <i><b>{html.quote(channel_queue_name)}</b></i>'
+        enti = msg.entities  # Для ссылок внутри текста
+        text_for_post = msg.text
+        try:
+            for elem in enti:
+                if elem.type == 'text_link':
+                    reg = r'[^#]{0}'.format(elem.extract_from(msg.text))
+                    sub_str = f'<a href = "{elem.url}">{elem.extract_from(msg.text)}</a>'
+                    text_for_post = re.sub(reg, sub_str, text_for_post)
+        except TypeError:
+            pass
+
+        if post_info['only_text']:
+            if len(msg.text) <= 3000:
+
+                await dict_queue[channel_queue_id].adding_publication_in_queue(text=text_for_post)
+                await msg.answer(text=msg_text, reply_markup=auto_posting)
+                await state.clear()
+            else:
+                await state.set_state(AddingPost.false_state)  # Это нужно для того, что бы когда телеграмм разобьет
+                # сообщение на две части не пропустить второе
+
+                await msg.answer(text=f'Ограничение для одного сообщения 3000 символов '
+                                      f'(Вы ввели {len(msg.text)} символа)',
+                                 reply_markup=only_file)
+
+                await asyncio.sleep(1)
+                await state.set_state(AddingPost.step_adding_text)  # И сразу установим стэйт обратно,
+                # что бы пользователь мог повторить ввод текста для публикации
         else:
-            await msg.answer(text=f'Ограничение для описания файла 1024 символа (Вы ввели {len(msg.text)} символа)',
-                             reply_markup=cancel_button)
+            if len(msg.text) <= 1024:
+                # file_id_list = [i[0] for i in post_info['mediafile']]
+                await dict_queue[channel_queue_id].adding_publication_in_queue(
+                    text=(text_for_post if msg.text != 'Готово' else None),
+                    file_id=post_info['mediafile']
+                )
+                await msg.answer(text=msg_text, reply_markup=auto_posting)
+                await state.clear()
 
-
-@admin_router.message(AddingPost.step_adding_file, F.photo | F.document | F.video | F.video_note)
-async def adding_publication_get_file(msg: Message, state: FSMContext):
-    """Здесь пользователь скидывает файл будущей публикаций"""
-    content_type = (await state.get_data())['selected_type']
-    channel_queue_id = (await state.get_data())['channel_id']
-    text_for_post = (await state.get_data())['text_for_post']
-    msg_text = f'Публикация добавлена в очередь <i><b>{html.quote((await state.get_data())["channel_name"])}</b></i>'
-    option_dict = {
-        'video': (msg.video, None),
-        'video_text': (msg.video, text_for_post),
-        'file': (msg.document, None),
-        'file_text': (msg.document, text_for_post),
-        'video_note': (msg.video_note, None),
-    }
-
-    async def adding_post():
-        await dict_queue[channel_queue_id].adding_publication_in_queue(
-            content_type=content_type,
-            file_id=option_dict[content_type][0].file_id,
-            text=option_dict[content_type][1]
-        )
-
-        await msg.answer(text=msg_text, reply_markup=auto_posting)
-        await state.clear()
-
-    # Проверяем, соответствует ли тип сброшенного контента заявленному
-
-    if msg.photo and content_type in ['pic', 'pic_text']:
-        # Из-за того, что только msg.photo приходит в массиве, пришлось вынести эти ключи отдельно,
-        # а иначе, при других типах сбрасываемого контента выскакивает ошибка
-        option_dict['pic'] = (msg.photo[-1], None)
-        option_dict['pic_text'] = (msg.photo[-1], text_for_post)
-        await adding_post()
-
-    elif msg.video and content_type in ['video', 'video_text']:
-        await adding_post()
-
-    elif msg.document and content_type in ['file', 'file_text']:
-        await adding_post()
-
-    elif msg.video_note and content_type == 'video_note':
-        await adding_post()
-
-    else:
-        await msg.answer(text='Скинутый файл не соответствует заявленному', reply_markup=cancel_button)
+            else:
+                await msg.answer(text=f'Ограничение для описания файла(ов) 1024 символа '
+                                      f'(Вы ввели {len(msg.text)} символа)',
+                                 reply_markup=only_file)

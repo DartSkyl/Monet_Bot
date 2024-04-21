@@ -3,7 +3,7 @@ from datetime import date
 from config_data.config import MAIN_GROUP_ID
 from loader import channels_dict, bot, db, subscription_dict, users_mess_dict, admins_id
 from utils import chat_member_router, SubManag
-from aiogram import F
+from aiogram import F, html
 from aiogram.types import ChatMember
 from aiogram.filters import ChatMemberUpdatedFilter, IS_NOT_MEMBER, ADMINISTRATOR, MEMBER
 
@@ -24,6 +24,8 @@ async def new_member(chat_member: ChatMember):
         # Здесь мы получаем список с записями конкретного пользователя из таблицы канала куда он подписался.
         # Если список пуст, значит подписки у пользователя нет
         usr = await db.get_user_from_channel(user_id=chat_member.from_user.id, channel_id=chat_member.chat.id)
+        channel_name = (await bot.get_chat(chat_member.chat.id)).title
+        msg_prefix = html.quote(f'{channel_name}\n===========\n\n')
         if len(usr) == 0:
 
             if subscription_dict[chat_member.chat.id][0] > 0:  # Проверяем, включена ли вообще пробная подписка
@@ -32,20 +34,22 @@ async def new_member(chat_member: ChatMember):
                 did_receive = await db.check_user_in_trail(user_id=chat_member.from_user.id,
                                                            channel_id=chat_member.chat.id)
                 if not did_receive:
+                    await bot.unban_chat_member(chat_id=chat_member.chat.id, user_id=chat_member.from_user.id)
                     await SubManag.add_user_trail_sub(user_id=chat_member.from_user.id, channel_id=chat_member.chat.id)
-                    await bot.send_message(chat_id=chat_member.from_user.id, text=users_mess_dict['trail_sub'])
+                    await bot.send_message(chat_id=chat_member.from_user.id,
+                                           text=(msg_prefix + users_mess_dict['trail_sub']))
                     # Метод сразу фиксирует и подписчика, и пробную подписку
                     await db.count_trail_subscription(channel_id=chat_member.chat.id, date_today=str(date.today()))
 
                 else:  # Если пробная подписка уже выдавалась
-                    await bot.ban_chat_member(user_id=chat_member.from_user.id, chat_id=chat_member.chat.id,
-                                              until_date=(int(time.time()) + 60))
-                    await bot.send_message(chat_id=chat_member.from_user.id, text=users_mess_dict['was_trail'])
+                    await bot.ban_chat_member(user_id=chat_member.from_user.id, chat_id=chat_member.chat.id)
+                    await bot.send_message(chat_id=chat_member.from_user.id,
+                                           text=(msg_prefix + users_mess_dict['was_trail']))
 
             else:  # Если пробная подписка отключена, а платную еще не подключил
-                await bot.ban_chat_member(user_id=chat_member.from_user.id, chat_id=chat_member.chat.id,
-                                          until_date=(int(time.time()) + 60))
-                await bot.send_message(chat_id=chat_member.from_user.id, text=users_mess_dict['not_trail'])
+                await bot.ban_chat_member(user_id=chat_member.from_user.id, chat_id=chat_member.chat.id)
+                await bot.send_message(chat_id=chat_member.from_user.id,
+                                       text=(msg_prefix + users_mess_dict['not_trail']))
 
         else:  # Если подписка уже есть, то просто заносим в статистику
             await db.new_member(channel_id=chat_member.chat.id, date_today=str(date.today()))

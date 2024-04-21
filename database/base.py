@@ -286,8 +286,7 @@ class BotBase:
         async with self.pool.acquire() as connection:
             await connection.execute(f"CREATE TABLE IF NOT EXISTS list_of_publication_{abs(channel_id)}"
                                      f"(container_id VARCHAR(10) PRIMARY KEY,"
-                                     f"content_type VARCHAR(10),"
-                                     f"file_id VARCHAR(100),"
+                                     f"file_id TEXT,"
                                      f"publication_text TEXT)")
 
     async def delete_publication_table(self, channel_id: int) -> None:
@@ -303,14 +302,13 @@ class BotBase:
 
     async def save_publication(self, channel_id: int,
                                container_id: str,
-                               content_type: str,
                                file_id: str,
                                publication_text: str) -> None:
         """Метод сохраняет публикацию в соответствующую таблицу"""
         async with self.pool.acquire() as connection:
             await connection.execute(f"INSERT INTO public.list_of_publication_{abs(channel_id)} "
-                                     f"(container_id, content_type, file_id, publication_text)"
-                                     f"VALUES ('{container_id}', '{content_type}', '{file_id}', '{publication_text}');")
+                                     f"(container_id, file_id, publication_text)"
+                                     f"VALUES ('{container_id}', '{file_id}', '{publication_text}');")
 
     async def remove_publication_from_db(self, channel_id: int, container_id: str) -> None:
         """Метод удаляет уже опубликованную публикацию"""

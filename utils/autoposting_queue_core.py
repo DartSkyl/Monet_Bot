@@ -1,4 +1,7 @@
 import time
+
+from aiogram.utils.media_group import MediaGroupBuilder
+
 from config_data.config import PG_URI
 from loader import db, bot, admins_id
 from .autoposting_content_container import ContentContainer
@@ -18,26 +21,16 @@ async def publish_post(channel_id: int):
     try:
         queue = dict_queue[-channel_id]
         publication = (await queue.get_list_publication())[0]
-        publication_type = publication.get_type()
-        # Иначе могут быть проблемы с парсингом сообщений:
-        publication_text = (html.quote(publication.get_text()) if publication.get_text() else None)
         publication_file_id = publication.get_file_id()
 
-        if publication_type == 'text':
-            await bot.send_message(chat_id=-channel_id, text=publication_text)
-        elif publication_type in ['pic', 'pic_text']:
-            await bot.send_photo(chat_id=-channel_id, photo=publication_file_id, caption=publication_text,
-                                 protect_content=True)
-        elif publication_type in ['video', 'video_text']:
-            await bot.send_video(chat_id=-channel_id, video=publication_file_id, caption=publication_text,
-                                 protect_content=True)
-        elif publication_type in ['file', 'file_text']:
-            # Здесь protect_content будет по умолчанию (False).
-            # Вряд ли кто-то будет скидывать файл, что бы его не могли скачать
-            await bot.send_document(chat_id=-channel_id, document=publication_file_id, caption=publication_text, )
-        elif publication_type == 'video_note':
-            await bot.send_video_note(chat_id=-channel_id, video_note=publication_file_id, protect_content=True)
-        # Так как публикуемая запись всегда первая в списке, то индекс равен 0
+        if publication_file_id:  # Если данный список пуст, значит объявление без медиафайлов
+            media_group = MediaGroupBuilder(caption=publication.get_text())
+            for mediafile in publication_file_id:
+                media_group.add(type=mediafile[1], media=mediafile[0])
+            await bot.send_media_group(chat_id=-channel_id, media=media_group.build())
+
+        else:
+            await bot.send_message(chat_id=-channel_id, text=html.quote(publication.get_text()))
         await queue.remove_publication(removing_index=0)
 
     except IndexError:  # Выскочит если список публикаций пуст
@@ -93,20 +86,21 @@ class AutoPosting:
         self. _publication_list = list()
         self._scheduler.start()
 
-    async def adding_publication_in_queue(self, content_type, file_id=None, text=None):
+    async def adding_publication_in_queue(self, file_id=None, text=None):
         """Метод сохраняет публикацию в список публикаций через специальный контейнер"""
-        content_container = None  # Изменим это чуть ниже, в зависимости от условий
         container_id = str(int(time.time()))  # В качестве ID будут секунды в виде строки
-        if file_id and text:
-            content_container = ContentContainer(container_id=container_id, post_type=content_type, file_id=file_id, text=text)
-        elif file_id:
-            content_container = ContentContainer(container_id=container_id, post_type=content_type, file_id=file_id)
-        elif text:
-            content_container = ContentContainer(container_id=container_id, post_type=content_type, text=text)
-
+        content_container = ContentContainer(container_id=container_id, file_id=file_id, text=text)
         self._publication_list.append(content_container)
+
+        if file_id:
+            file_id_for_db = ''
+            for file in file_id:
+                file_id_for_db += '!$!$'.join(file)
+                file_id_for_db += '$!$!'  # разделитель между записями
+            file_id = file_id_for_db
+
         await db.save_publication(channel_id=int(self._alias), container_id=container_id,
-                                  content_type=content_type, file_id=file_id, publication_text=text)
+                                  file_id=file_id, publication_text=text)
 
     async def get_list_publication(self):
         """Возвращает список публикаций"""
@@ -214,13 +208,15 @@ class AutoPosting:
         """Здесь выгружаются публикации из БД в список публикаций"""
         list_from_db = await db.get_list_of_publication(channel_id=int(self._alias))
         for publication in list_from_db:
+            if publication['file_id'] != 'None':
+
+                file_id = publication['file_id'].split('$!$!')
+                file_id = [elem.split('!$!$') for elem in file_id]
+                file_id.pop()  # В конце образуется пустой элемент
+            else:
+                file_id = None
             content_container = ContentContainer(container_id=publication['container_id'],
-                                                 post_type=publication['content_type'],
-                                                 file_id=(publication['file_id']
-                                                          if publication['file_id'] != 'None' else None),
-                                                 # Что бы не передавать 'None' в качестве строки, так как
-                                                 # из БД будет загружаться именно такая строка,
-                                                 # если текст или ID файла не передавались
+                                                 file_id=file_id,
                                                  text=(publication['publication_text']
                                                        if publication['publication_text'] != 'None' else None))
 
