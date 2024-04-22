@@ -28,7 +28,8 @@ async def adding_publication_choice_type(callback: CallbackQuery, callback_data:
     msg_text = (f'Выбрана очередь публикаций <i><b>{html.quote(channel_name)}</b></i>\n'
                 f'Публикация может быть трех видов:\n'
                 f'- только текст (3000 символов)\n'
-                f'- текст (1024 символа) + файл(ы)(до 10 файлов)\n'
+                f'- текст (1024 символа, видеосообщение не может содержать текст) '
+                f'+ файл(ы)(до 10 файлов, если это фото, видео, документы или аудиофайлы)\n'
                 f'- только файл(ы)(до 10 файлов)\n\n'
                 f'Скиньте файл(ы) или нажмите кнопку <b>Дальше</b>')
     await callback.message.answer(text=msg_text, reply_markup=only_text)
@@ -52,7 +53,11 @@ async def adding_files(msg: Message, state: FSMContext):
     elif msg.document:
         file_id_list.append((msg.document.file_id, 'document'))
     elif msg.video_note:
-        file_id_list.append((msg.video_note.file_id, 'video_note'))
+        file_id_list = [(msg.video_note.file_id, 'video_note')]
+    elif msg.audio:
+        file_id_list.append((msg.audio.file_id, 'audio'))
+    elif msg.voice:
+        file_id_list = [(msg.voice.file_id, 'voice')]
 
     await state.update_data({'mediafile': file_id_list})
 

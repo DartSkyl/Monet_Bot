@@ -23,11 +23,24 @@ async def publish_post(channel_id: int):
         publication = (await queue.get_list_publication())[0]
         publication_file_id = publication.get_file_id()
 
-        if publication_file_id:  # Если данный список пуст, значит объявление без медиафайлов
-            media_group = MediaGroupBuilder(caption=publication.get_text())
-            for mediafile in publication_file_id:
-                media_group.add(type=mediafile[1], media=mediafile[0])
-            await bot.send_media_group(chat_id=-channel_id, media=media_group.build())
+        if publication_file_id:  # Если None, значит объявление без медиафайлов
+
+            if publication_file_id[0][1] in {'photo', 'video', 'audio', 'document'}:
+                # Так как только эти типы файлов могут быть медиа группой
+                media_group = MediaGroupBuilder(caption=publication.get_text())
+                for mediafile in publication_file_id:
+                    media_group.add(type=mediafile[1], media=mediafile[0])
+                if publication_file_id[0][1] in {'photo', 'video', 'audio'}:
+                    await bot.send_media_group(chat_id=-channel_id, media=media_group.build(), protect_content=True)
+                else:  # Остается только тип файла document. Только его сделаем доступным для скачивания
+                    await bot.send_media_group(chat_id=-channel_id, media=media_group.build())
+
+            else:  # voice, video_note
+                if publication_file_id[0][1] == 'voice':
+                    await bot.send_voice(chat_id=-channel_id, voice=publication_file_id[0][0],
+                                         caption=publication.get_text(), protect_content=True)
+                elif publication_file_id[0][1] == 'video_note':
+                    await bot.send_video_note(chat_id=-channel_id, video_note=publication_file_id[0][0], protect_content=True)
 
         else:
             await bot.send_message(chat_id=-channel_id, text=html.quote(publication.get_text()))

@@ -109,11 +109,19 @@ async def show_mediafile(callback: CallbackQuery, state: FSMContext):
     publication_files = (await state.get_data())['publication'].get_file_id()
     if publication_files:  # Если списка, значит объявление без медиафайлов
         await callback.answer()
-        media_group = MediaGroupBuilder()
-        for mediafile in publication_files:
-            media_group.add(type=mediafile[1], media=mediafile[0])
-        await bot.send_media_group(chat_id=callback.from_user.id, media=media_group.build())
-        await state.set_state(AutoPost.file_demonstration)
+        if publication_files[0][1] in {'photo', 'video', 'audio', 'document'}:
+            media_group = MediaGroupBuilder()
+            for mediafile in publication_files:
+                media_group.add(type=mediafile[1], media=mediafile[0])
+            await bot.send_media_group(chat_id=callback.from_user.id, media=media_group.build())
+            await state.set_state(AutoPost.file_demonstration)
+        else:
+            if publication_files[0][1] == 'voice':
+                await bot.send_voice(chat_id=callback.from_user.id, voice=publication_files[0][0])
+                await state.set_state(AutoPost.file_demonstration)
+            elif publication_files[0][1] == 'video_note':
+                await bot.send_video_note(chat_id=callback.from_user.id, video_note=publication_files[0][0])
+                await state.set_state(AutoPost.file_demonstration)
     else:
         await callback.answer(text='Публикация не содержит медиафайла!')
 
