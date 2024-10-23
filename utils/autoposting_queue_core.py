@@ -2,7 +2,7 @@ import time
 
 from aiogram.utils.media_group import MediaGroupBuilder
 
-from config_data.config import PG_URI
+from config import PG_URI
 from loader import db, bot, admins_id
 from .autoposting_content_container import ContentContainer
 

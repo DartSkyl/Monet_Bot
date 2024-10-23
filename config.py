@@ -19,9 +19,11 @@ PG_URI = f"postgresql+psycopg2://{DB_INFO[0]}:{DB_INFO[1]}@{DB_INFO[3]}/{DB_INFO
 
 MAIN_GROUP_ID = int(os.getenv("main_group_id"))
 
-logging.basicConfig(
-    filename='bot.log',
-    filemode='a',
-    format="%(asctime)s %(levelname)s %(message)s"
-)
-logging.getLogger().setLevel(logging.ERROR)
+WEBHOOK = os.getenv("webhook")
+
+# logging.basicConfig(
+#     filename='bot.log',
+#     filemode='a',
+#     format="%(asctime)s %(levelname)s %(message)s"
+# )
+# logging.getLogger().setLevel(logging.ERROR)

@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from config_data.config import PAYMENT_TOKEN
+from config import PAYMENT_TOKEN
 from loader import users_mess_dict, bot, db, subscription_dict, admins_id
 from states import UserPayment, CommunicationAdministration
 from utils import users_router

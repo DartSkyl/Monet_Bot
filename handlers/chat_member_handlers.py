@@ -1,6 +1,6 @@
 import time
 from datetime import date
-from config_data.config import MAIN_GROUP_ID
+from config import MAIN_GROUP_ID
 from loader import channels_dict, bot, db, subscription_dict, users_mess_dict, admins_id
 from utils import chat_member_router, SubManag
 from aiogram import F, html

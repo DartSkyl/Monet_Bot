@@ -1,7 +1,7 @@
 from typing import List
 
-from database.base import BotBase
-from config_data.config import BOT_TOKEN, DB_INFO, MAIN_GROUP_ID
+from base import BotBase
+from config import BOT_TOKEN, DB_INFO, MAIN_GROUP_ID
 
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
