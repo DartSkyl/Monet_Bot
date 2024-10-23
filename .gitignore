@@ -3,6 +3,12 @@ venv/
 venv_2/
 *.log
 /z_bot/test_module.py
-*__pycache__*
+/__pycache__/
+/handlers/__pycache__/
 /z_bot/
 .env
+keyboards/Inline_keyboard/__pycache__/
+keyboards/__pycache__/
+keyboards/reply_keyboard/__pycache__/
+states/__pycache__/
+utils/__pycache__/

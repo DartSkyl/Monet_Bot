@@ -7,5 +7,6 @@ from . import (
     admin_autoposting_view_queue,
     admin_autoposting_publication_management,
     admin_set_users_mess,
-    admin_statistic
+    admin_statistic,
+    admin_for_test
 )

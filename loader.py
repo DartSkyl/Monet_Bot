@@ -1,5 +1,7 @@
 from typing import List
 
+from aiogram.client.default import DefaultBotProperties
+
 from base import BotBase
 from config import BOT_TOKEN, DB_INFO, MAIN_GROUP_ID
 
@@ -9,7 +11,7 @@ from aiogram.fsm.storage.memory import MemoryStorage
 
 db = BotBase(DB_INFO[0], DB_INFO[1], DB_INFO[2], DB_INFO[3])
 
-bot = Bot(token=BOT_TOKEN, parse_mode="HTML")
+bot = Bot(token=BOT_TOKEN, default=DefaultBotProperties(parse_mode='HTML'))
 dp = Dispatcher(bot=bot, storage=MemoryStorage())
 
 # В этом списке будем хранить ID всех администраторов
