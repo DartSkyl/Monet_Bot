@@ -143,7 +143,10 @@ async def test_payment(msg: Message, state: FSMContext):
                 f'сроком на <b>{sub_info["period"]}</b> дня/дней\n'
                 f'добавлена!\n')
     msg_text += users_mess_dict['paid']
-    await bot.unban_chat_member(chat_id=sub_info['channel_id'], user_id=msg.from_user.id)
+    try:
+        await bot.unban_chat_member(chat_id=sub_info['channel_id'], user_id=msg.from_user.id)
+    except Exception as e:
+        print(e)
     await msg.answer(text=msg_text, reply_markup=main_user_keyboard)
     await state.clear()
 

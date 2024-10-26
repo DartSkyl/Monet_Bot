@@ -21,9 +21,9 @@ MAIN_GROUP_ID = int(os.getenv("main_group_id"))
 
 WEBHOOK = os.getenv("webhook")
 
-# logging.basicConfig(
-#     filename='bot.log',
-#     filemode='a',
-#     format="%(asctime)s %(levelname)s %(message)s"
-# )
-# logging.getLogger().setLevel(logging.ERROR)
+logging.basicConfig(
+    filename='bot.log',
+    filemode='a',
+    format="%(asctime)s %(levelname)s %(message)s"
+)
+logging.getLogger().setLevel(logging.ERROR)

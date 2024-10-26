@@ -1,9 +1,10 @@
 journalctl --vacuum-size=500M;
-apt-get update -y;
-apt-get install postgresql postgresql-contrib -y;
-apt-get install python3 -y;
-apt-get install pip -y;
-apt-get install libpq-dev -y;
+apt update -y;
+apt install postgresql postgresql-contrib -y;
+apt install python3.11 -y;
+#apt install pip -y;
+apt install libpq-dev -y;
+
 pip install -r requirements.txt;
 systemctl enable postgresql.service; service postgresql start;
 sudo -u postgres psql -c "CREATE ROLE bot LOGIN PASSWORD 'Monet_Bot_123';";
