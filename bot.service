@@ -5,7 +5,9 @@ After=postgresql.service
 [Service]
 Type=simple
 Restart=always
-ExecStart=/usr/bin/python3 /root/Monet_Bot-master/app.py
+User=revmin
+WorkingDirectory=/home/revmin/Monet_Bot
+ExecStart=/home/revmin/Monet_Bot/venv/bin/python3 /home/revmin/Monet_Bot/app.py
 OOMScoreAdjust=-1000
 
 [Install]
